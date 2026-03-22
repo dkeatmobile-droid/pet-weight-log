@@ -9,13 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Nunito', system-ui, sans-serif;
-            background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(255,182,193,0.15) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(173,216,230,0.12) 0%, transparent 25%);
-        }
+        body { font-family: 'Nunito', system-ui, sans-serif; background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%); background-image: radial-gradient(circle at 10% 20%, rgba(255,182,193,0.15) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(173,216,230,0.12) 0%, transparent 25%); }
         h1, h2, h3 { font-family: 'Comic Neue', cursive; }
         .pet-card { transition: all 0.3s ease; transform: scale(1); }
         .pet-card:hover { transform: scale(1.06); }
@@ -45,7 +39,7 @@
     </div>
 
     <div class="flex h-screen overflow-hidden">
-        <!-- SIDEBAR -->
+        <!-- SIDEBAR – cat selection -->
         <div class="w-80 bg-white/80 backdrop-blur-md border-r border-pink-200 flex flex-col shadow-xl">
             <div class="p-6 border-b border-pink-100 flex items-center gap-3">
                 <div class="text-5xl animate-bounce">🐱💕</div>
@@ -89,7 +83,7 @@
         <div class="flex-1 flex flex-col">
             <div class="h-20 bg-white/70 backdrop-blur-md border-b border-pink-200 px-10 flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <div id="selected-pet-emoji" class="text-6xl drop-shadow-lg heart-float">🐾</div>
+                    <div id="selected-pet-emoji" class="w-20 h-20 rounded-full overflow-hidden border-4 border-pink-300 shadow-lg heart-float"></div>
                     <div>
                         <div class="flex items-center gap-3">
                             <h2 id="selected-pet-name" class="text-3xl font-bold text-pink-600">Select kitty!</h2>
@@ -108,7 +102,7 @@
             <div id="no-pet-selected" class="flex-1 flex flex-col items-center justify-center text-center">
                 <div class="text-9xl mb-6 animate-bounce">🐱🐱</div>
                 <h3 class="text-4xl font-bold text-pink-500 mb-4">Hello cuties! ♡</h3>
-                <p class="text-xl text-pink-400 max-w-lg">Pick Jasmine or Frank to start tracking their weekly weights!</p>
+                <p class="text-xl text-pink-400 max-w-lg">Click Jasmine or Frank on the left to start tracking!</p>
             </div>
 
             <div id="pet-content" class="hidden flex-1 overflow-auto">
@@ -135,7 +129,7 @@
                         </div>
                         <div class="flex items-end">
                             <button onclick="addWeightLog()"
-                                    class="w-full h-16 bg-pink-400 hover:bg-pink-500 text-white text-2xl font-bold rounded-3xl shadow-lg btn-kawaii transform hover:scale-105 active:scale-95">
+                                    class="w-full h-16 bg-pink-400 hover:bg-pink-500 text-white text-2xl font-bold rounded-3xl shadow-lg transform hover:scale-105 active:scale-95">
                                 SAVE WEIGHT! 💖
                             </button>
                         </div>
@@ -190,8 +184,7 @@
                     id: "jasmine",
                     name: "Jasmine",
                     type: "Fluffy Black Longhair",
-                    emoji: "🐱✨",  // fallback
-                    avatar: "https://thumbs.dreamstime.com/b/charming-black-kitten-golden-eyes-cute-expression-white-background-perfect-pet-photo-410491462.jpg",
+                    avatar: "https://thumbs.dreamstime.com/b/cute-cartoon-style-black-cat-sitting-upright-has-large-expressive-orange-eyes-pink-inner-ears-small-nose-its-tail-370736355.jpg",
                     goalWeight: null,
                     logs: [],
                     prevRibbons: []
@@ -200,8 +193,7 @@
                     id: "frank",
                     name: "Frank",
                     type: "Sleek Black Shorthair",
-                    emoji: "🐈‍⬛💕",
-                    avatar: "https://thumbs.dreamstime.com/b/black-cat-relaxing-observing-surroundings-striking-green-eyes-lying-comfortably-its-exuding-air-elegance-curiosity-403374971.jpg",
+                    avatar: "https://imgcdn.stablediffusionweb.com/2025/5/27/74b72d27-c7fb-4f68-95d1-9ea06d91d640.jpg",
                     goalWeight: null,
                     logs: [],
                     prevRibbons: []
@@ -209,7 +201,64 @@
             ];
         }
 
-        // ... (saveData, loadData, getGoalDisplay, getRibbons, celebrateNewRibbons, renderPetList, selectPet, renderCurrentPet, updateCurrentWeightDisplay remain the same as previous version)
+        function saveData() { localStorage.setItem("petWeightLog", JSON.stringify(pets)); }
+        function loadData() {
+            const saved = localStorage.getItem("petWeightLog");
+            pets = saved ? JSON.parse(saved) : createInitialPets();
+            saveData();
+        }
+
+        function getGoalDisplay(pet) {
+            if (!pet.goalWeight) return "No goal set ♡";
+            const current = pet.logs.length ? pet.logs[pet.logs.length-1].weight_kg : null;
+            let text = `Goal: ${pet.goalWeight.toFixed(1)} kg`;
+            if (current) {
+                const diff = current - pet.goalWeight;
+                if (Math.abs(diff) <= 0.2) return `<span class="goal-achieved">${text} 🎯💖</span>`;
+                else if (diff < 0) text += ` (${(pet.goalWeight - current).toFixed(1)} kg to go!)`;
+                else text += ` (passed by ${(current - pet.goalWeight).toFixed(1)} kg ♡)`;
+            }
+            return text;
+        }
+
+        function getRibbons(pet) {
+            if (!pet.logs?.length) return [];
+            const ribbons = [];
+            const sorted = [...pet.logs].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const latest = sorted.at(-1)?.weight_kg;
+
+            if (pet.logs.length === 1) ribbons.push({id: "first", emoji: "🎀", label: "First Weigh-in! Yay!"});
+            if (pet.logs.length >= 4) ribbons.push({id: "streak", emoji: "🔥🎀", label: "4-Week Streak Star!"});
+            if (pet.goalWeight && Math.abs(latest - pet.goalWeight) <= 0.2) ribbons.push({id: "goal", emoji: "🏆💖", label: "Goal Champion! 💕"});
+            const first = sorted[0]?.weight_kg;
+            if (latest - first >= 0.5) ribbons.push({id: "gain", emoji: "🌟🐾", label: "Healthy Gain Glow!"});
+            if (first - latest >= 0.5) ribbons.push({id: "loss", emoji: "✨🐾", label: "Slim & Trim Star!"});
+
+            return ribbons;
+        }
+
+        function celebrateNewRibbons(pet, newRibbons) {
+            const prev = pet.prevRibbons || [];
+            const newlyEarned = newRibbons.filter(r => !prev.includes(r.id));
+
+            if (newlyEarned.length > 0) {
+                pet.prevRibbons = newRibbons.map(r => r.id);
+                saveData();
+
+                const msg = newlyEarned.map(r => r.label).join("\n");
+                document.getElementById("celebrate-title").textContent = `${pet.name} earned ribbon${newlyEarned.length > 1 ? 's' : ''}!`;
+                document.getElementById("celebrate-msg").textContent = msg;
+                document.getElementById("celebrate-popup").classList.add("show");
+
+                const duration = 5000;
+                const end = Date.now() + duration;
+                (function frame() {
+                    confetti({ particleCount: 6, angle: 60, spread: 70, origin: { x: 0 }, colors: ['#ff9ec1','#a7d8ff','#ffd1dc','#c9f0ff','#ffe4e1','#d8b4fe'], zIndex: 200 });
+                    confetti({ particleCount: 6, angle: 120, spread: 70, origin: { x: 1 }, colors: ['#ff9ec1','#a7d8ff','#ffd1dc','#c9f0ff','#ffe4e1','#d8b4fe'], zIndex: 200 });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                })();
+            }
+        }
 
         function renderPetList() {
             const container = document.getElementById("pet-list");
@@ -222,7 +271,7 @@
                 const div = document.createElement("div");
                 div.className = `pet-card flex items-center gap-4 px-5 py-4 rounded-3xl cursor-pointer ${isSelected ? 'bg-pink-50 border-2 border-pink-400' : 'hover:bg-pink-50'}`;
                 div.innerHTML = `
-                    <img src="${pet.avatar}" alt="${pet.name}" class="w-12 h-12 rounded-full object-cover border-2 border-pink-300 shadow-sm">
+                    <img src="${pet.avatar}" alt="${pet.name}" class="w-14 h-14 rounded-full object-cover border-2 border-pink-300 shadow-sm">
                     <div class="flex-1 min-w-0">
                         <div class="font-semibold text-lg truncate">${pet.name}</div>
                         <div class="text-xs text-pink-500 truncate">${pet.type}</div>
@@ -238,6 +287,12 @@
             });
         }
 
+        function selectPet(id) {
+            currentPetId = id;
+            renderPetList();
+            renderCurrentPet();
+        }
+
         function renderCurrentPet() {
             const pet = pets.find(p => p.id === currentPetId);
             if (!pet) return;
@@ -245,31 +300,163 @@
             document.getElementById("no-pet-selected").classList.add("hidden");
             document.getElementById("pet-content").classList.remove("hidden");
 
-            // Use real avatar image instead of emoji
-            const avatarImg = document.createElement("img");
-            avatarImg.src = pet.avatar;
-            avatarImg.alt = pet.name;
-            avatarImg.className = "w-20 h-20 rounded-full object-cover border-4 border-pink-300 shadow-lg heart-float";
-            const emojiContainer = document.getElementById("selected-pet-emoji");
-            emojiContainer.innerHTML = '';
-            emojiContainer.appendChild(avatarImg);
+            // Avatar in header
+            const avatarContainer = document.getElementById("selected-pet-emoji");
+            avatarContainer.innerHTML = `<img src="${pet.avatar}" alt="${pet.name}" class="w-full h-full object-cover">`;
 
             document.getElementById("selected-pet-name").textContent = pet.name;
             document.getElementById("selected-pet-type").textContent = pet.type;
             document.getElementById("selected-pet-goal").innerHTML = getGoalDisplay(pet);
 
-            const ribbons = getRibbons(pet);
-            document.getElementById("ribbon-container").innerHTML = ribbons.map(r => `<span class="ribbon-badge" title="${r.label}">${r.emoji}</span>`).join('');
+            document.getElementById("ribbon-container").innerHTML = getRibbons(pet).map(r => `<span class="ribbon-badge" title="${r.label}">${r.emoji}</span>`).join('');
 
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById("log-date").value = today;
+            document.getElementById("log-date").value = new Date().toISOString().split('T')[0];
 
             renderHistoryTable(pet);
             renderWeightChart(pet);
             updateCurrentWeightDisplay(pet);
         }
 
-        // Settings toggle
+        function updateCurrentWeightDisplay(pet) {
+            const display = document.getElementById("current-weight-display");
+            if (pet.logs.length > 0) {
+                const latest = pet.logs[pet.logs.length - 1].weight_kg;
+                let text = `Current: ${latest.toFixed(1)} kg ♡`;
+                if (pet.goalWeight) {
+                    const diff = pet.goalWeight - latest;
+                    if (Math.abs(diff) <= 0.2) text += " 🎯 Goal achieved!";
+                    else if (diff > 0) text += ` (${diff.toFixed(1)} kg to go!)`;
+                }
+                display.innerHTML = text;
+            } else {
+                display.textContent = "Current: — kg ♡";
+            }
+        }
+
+        function renderWeightChart(pet) {
+            if (weightChart) weightChart.destroy();
+            const canvas = document.getElementById("weight-chart");
+            const sorted = [...pet.logs].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const labels = sorted.map(l => new Date(l.date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
+            const weights = sorted.map(l => l.weight_kg);
+
+            weightChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels.length ? labels : ["No data yet"],
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: weights.length ? weights : [0],
+                        borderColor: '#ec4899',
+                        backgroundColor: 'rgba(236,72,153,0.15)',
+                        tension: 0.3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderWidth: 3,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: false, grid: { color: '#f9a8d4' } }, x: { grid: { display: false } } }
+                }
+            });
+
+            document.getElementById("trend-info").textContent = weights.length >= 2 
+                ? (change => change > 0 ? `↑ ${change.toFixed(1)} kg` : change < 0 ? `↓ ${Math.abs(change).toFixed(1)} kg` : "→ stable")(weights.at(-1) - weights.at(-2))
+                : "Not enough data";
+        }
+
+        function renderHistoryTable(pet) {
+            const tbody = document.getElementById("history-table");
+            tbody.innerHTML = "";
+            if (!pet.logs.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-pink-400">No weigh-ins yet ♡ Start logging!</td></tr>';
+                return;
+            }
+            [...pet.logs].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(log => {
+                const lbs = (log.weight_kg * CONVERSION_FACTOR).toFixed(1);
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-4">${new Date(log.date).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'})}</td>
+                        <td class="p-4 font-medium">${log.weight_kg.toFixed(1)} kg</td>
+                        <td class="p-4 text-pink-400">${lbs} lbs</td>
+                        <td class="p-4"></td>
+                    </tr>`;
+            });
+        }
+
+        window.addWeightLog = function() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return alert("Select a kitty first ♡");
+
+            const date = document.getElementById("log-date").value;
+            let weight = parseFloat(document.getElementById("log-weight").value);
+            const unit = document.getElementById("log-unit").value;
+
+            if (!date || isNaN(weight) || weight <= 0) return alert("Please enter valid date and weight ♡");
+
+            if (unit === "lbs") weight /= CONVERSION_FACTOR;
+
+            const idx = pet.logs.findIndex(l => l.date === date);
+            if (idx !== -1) pet.logs[idx].weight_kg = parseFloat(weight.toFixed(2));
+            else pet.logs.push({ date, weight_kg: parseFloat(weight.toFixed(2)) });
+
+            saveData();
+
+            celebrateNewRibbons(pet, getRibbons(pet));
+
+            renderHistoryTable(pet);
+            renderWeightChart(pet);
+            updateCurrentWeightDisplay(pet);
+            renderPetList();
+            renderCurrentPet();
+
+            document.getElementById("log-weight").value = "";
+        };
+
+        window.deleteCurrentPet = function() {
+            if (!currentPetId || !confirm(`Really delete ${pets.find(p => p.id === currentPetId).name}? All data lost!`)) return;
+            pets = pets.filter(p => p.id !== currentPetId);
+            saveData();
+            if (pets.length) selectPet(pets[0].id);
+            else {
+                currentPetId = null;
+                document.getElementById("pet-content").classList.add("hidden");
+                document.getElementById("no-pet-selected").classList.remove("hidden");
+                renderPetList();
+            }
+        };
+
+        function exportData() {
+            const dataStr = JSON.stringify(pets, null, 2);
+            const uri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const link = document.createElement('a');
+            link.href = uri;
+            link.download = `jasmin-frank-${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if (Array.isArray(imported) && imported.length <= 2) {
+                        pets = imported;
+                        saveData();
+                        renderPetList();
+                        if (pets.length) selectPet(pets[0].id);
+                        alert("Imported! ♡");
+                    } else alert("Invalid file (only Jasmine & Frank supported)");
+                } catch(err) { alert("Invalid file"); }
+            };
+            reader.readAsText(file);
+        }
+
         function toggleSettings() {
             const content = document.getElementById("settings-content");
             const toggle = document.getElementById("settings-toggle");
@@ -277,12 +464,10 @@
             toggle.textContent = content.classList.contains("settings-collapsed") ? "▼" : "▲";
         }
 
-        // ... (keep addWeightLog, deleteCurrentPet, exportData, importData, renderWeightChart, renderHistoryTable as in previous version)
-
         function init() {
             loadData();
             renderPetList();
-            if (pets.length > 0) selectPet(pets[0].id);
+            if (pets.length) selectPet(pets[0].id);
         }
 
         window.onload = init;
