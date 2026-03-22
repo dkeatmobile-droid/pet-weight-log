@@ -1,0 +1,23 @@
+{
+  "name": "Fat Fighters",
+  "short_name": "FatFighters",
+  "description": "Track your pets' weight journey!",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff0f5",
+  "theme_color": "#ec4899",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
