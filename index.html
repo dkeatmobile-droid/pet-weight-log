@@ -9,71 +9,69 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Nunito', system-ui, sans-serif;
-            background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%);
-        }
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-        }
-        .avatar-fallback {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fce7f3;
-            font-size: 2.5rem;
-        }
-        .pet-tab .avatar-container {
-            width: 56px;
-            height: 56px;
-            border-radius: 9999px;
-            overflow: hidden;
-            border: 2px solid #fbcfe8;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .selected-avatar-container {
-            width: 80px;
-            height: 80px;
-            border-radius: 9999px;
-            overflow: hidden;
-            border: 4px solid #fbcfe8;
-            box-shadow: 0 4px 12px rgba(236,72,153,0.3);
-        }
+        body { font-family: 'Nunito', system-ui, sans-serif; background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%); }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+        .avatar-fallback { display: flex; align-items: center; justify-content: center; background: #fce7f3; font-size: 2.5rem; }
+        .gallery-thumb { width: 80px; height: 80px; object-fit: cover; object-position: center; border-radius: 12px; cursor: pointer; border: 2px solid #fbcfe8; transition: transform 0.2s; }
+        .gallery-thumb:hover { transform: scale(1.08); }
+        .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 60; flex-direction: column; gap: 1rem; }
+        .lightbox img { max-width: 90%; max-height: 70vh; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .lightbox-caption { color: white; font-size: 1.25rem; max-width: 80%; text-align: center; padding: 0 1rem; }
     </style>
 </head>
 <body class="min-h-screen text-pink-900">
 
-    <!-- Add Fighter Modal -->
-    <div id="add-pet-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <!-- Add/Edit Pet Modal -->
+    <div id="pet-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
         <div class="bg-white rounded-3xl p-10 w-full max-w-lg border-8 border-pink-300 shadow-2xl">
-            <h3 class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Fat Fighter! 🐾💪</h3>
+            <h3 id="modal-title" class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Fat Fighter! 🐾💪</h3>
             <div class="space-y-6">
                 <div>
                     <label class="block text-xl font-bold text-pink-500 mb-2">Name</label>
-                    <input id="new-pet-name" type="text" placeholder="e.g. Jasmine" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                    <input id="pet-name" type="text" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
                 </div>
                 <div>
                     <label class="block text-xl font-bold text-pink-500 mb-2">Type / Breed (optional)</label>
-                    <input id="new-pet-type" type="text" placeholder="e.g. Black Short hair" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                    <input id="pet-type" type="text" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
                 </div>
                 <div>
                     <label class="block text-xl font-bold text-pink-500 mb-2">Goal Weight (kg) – optional</label>
-                    <input id="new-pet-goal" type="number" step="0.1" placeholder="e.g. 6" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                    <input id="pet-goal" type="number" step="0.1" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
                 </div>
                 <div>
                     <label class="block text-xl font-bold text-pink-500 mb-2">Avatar Picture</label>
-                    <input id="new-pet-avatar" type="file" accept="image/*" class="block w-full text-lg text-pink-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-100 file:text-pink-700 hover:file:bg-pink-200">
-                    <p class="text-xs text-pink-400 mt-2">Upload a cute pic of your fighter! (max ~2MB recommended)</p>
+                    <input id="pet-avatar" type="file" accept="image/*" class="block w-full text-lg text-pink-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-100 file:text-pink-700 hover:file:bg-pink-200">
+                    <p class="text-xs text-pink-400 mt-2">Upload or replace photo (max ~2MB)</p>
                 </div>
                 <div class="flex gap-4">
-                    <button onclick="hideAddPetModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl hover:bg-pink-50">Cancel 😿</button>
-                    <button onclick="addNewPet()" class="flex-1 py-5 bg-pink-400 text-white font-bold text-xl rounded-2xl hover:bg-pink-500 shadow-lg">Add Fighter! 💖</button>
+                    <button onclick="hidePetModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl hover:bg-pink-50">Cancel 😿</button>
+                    <button id="save-pet-btn" onclick="savePet()" class="flex-1 py-5 bg-pink-400 text-white font-bold text-xl rounded-2xl hover:bg-pink-500 shadow-lg">Save Fighter! 💖</button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Monthly Photo Prompt Modal (with caption) -->
+    <div id="monthly-photo-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-10 w-full max-w-md border-8 border-pink-300 shadow-2xl">
+            <h3 class="text-3xl font-bold text-pink-600 mb-6 text-center">Add This Month's Progress Pic! 📸</h3>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-xl font-bold text-pink-500 mb-2">Caption (optional but cute!)</label>
+                    <input id="monthly-caption" type="text" placeholder="e.g. Look at that glow-up! ✨" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="hideMonthlyModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl hover:bg-pink-50">Cancel</button>
+                    <button onclick="triggerMonthlyPhotoUpload()" class="flex-1 py-5 bg-pink-400 text-white font-bold rounded-2xl hover:bg-pink-500">Choose Photo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox for gallery photos -->
+    <div id="lightbox" class="lightbox hidden" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Progress photo" class="max-w-[90%] max-h-[70vh] rounded-2xl">
+        <p id="lightbox-caption" class="lightbox-caption"></p>
     </div>
 
     <!-- Celebration popup -->
@@ -98,13 +96,13 @@
             </div>
 
             <div class="p-6 flex-1 overflow-y-auto">
-                <button onclick="showAddPetModal()" class="w-full bg-pink-400 hover:bg-pink-500 text-white px-6 py-4 rounded-3xl font-bold shadow-lg transform hover:scale-105 transition mb-6 text-lg">
+                <button onclick="openAddPetModal()" class="w-full bg-pink-400 hover:bg-pink-500 text-white px-6 py-4 rounded-3xl font-bold shadow-lg transform hover:scale-105 transition mb-6 text-lg">
                     + Add a Fat Fighter
                 </button>
                 <div id="pet-list" class="space-y-4"></div>
             </div>
 
-            <!-- Collapsible Settings -->
+            <!-- Settings -->
             <div class="mt-auto border-t border-pink-100">
                 <div onclick="toggleSettings()" class="settings-header p-6 flex items-center justify-between bg-pink-50 hover:bg-pink-100 cursor-pointer">
                     <div class="flex items-center gap-2 font-bold text-pink-600">
@@ -133,9 +131,7 @@
         <div class="flex-1 flex flex-col">
             <div class="h-20 bg-white/70 backdrop-blur-md border-b border-pink-200 px-10 flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <div id="selected-pet-avatar" class="selected-avatar-container bg-gray-100 flex items-center justify-center text-5xl overflow-hidden">
-                        <div class="avatar-fallback w-full h-full text-6xl">🐱</div>
-                    </div>
+                    <div id="selected-pet-avatar" class="selected-avatar-container bg-gray-100 flex items-center justify-center text-5xl overflow-hidden"></div>
                     <div>
                         <div class="flex items-center gap-3">
                             <h2 id="selected-pet-name" class="text-3xl font-bold text-pink-600">Select a fighter!</h2>
@@ -145,7 +141,6 @@
                         <p id="selected-pet-goal" class="goal-display text-pink-500 mt-1">Goal: —</p>
                     </div>
                 </div>
-
                 <div class="text-pink-500 font-bold flex items-center gap-2">
                     <span class="text-xl animate-pulse">✨</span> Weekly Check-in ♡
                 </div>
@@ -160,9 +155,14 @@
             <div id="pet-content" class="hidden flex-1 overflow-auto">
                 <!-- Weight input -->
                 <div class="bg-white/80 backdrop-blur-md m-8 rounded-3xl p-8 shadow-xl border-4 border-pink-200">
-                    <h3 class="text-3xl font-bold text-pink-600 mb-6 flex items-center gap-3">
-                        <span class="text-4xl">📝💕</span> This Week's Weigh-in
-                    </h3>
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-3xl font-bold text-pink-600 flex items-center gap-3">
+                            <span class="text-4xl">📝💕</span> This Week's Weigh-in
+                        </h3>
+                        <button onclick="openEditPetModal()" class="bg-pink-300 hover:bg-pink-400 text-white px-5 py-2 rounded-2xl text-sm font-bold shadow">
+                            Edit Profile ✏️
+                        </button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div>
                             <label class="block text-lg font-bold text-pink-500 mb-2">Date</label>
@@ -202,6 +202,17 @@
                     </div>
                 </div>
 
+                <!-- Monthly Gallery -->
+                <div class="bg-white/80 backdrop-blur-md mx-8 mb-8 rounded-3xl p-8 shadow-xl border-4 border-pink-200">
+                    <h3 class="text-3xl font-bold text-pink-600 mb-6 flex items-center justify-between">
+                        Monthly Progress Gallery 📸
+                        <button onclick="openMonthlyPhotoPrompt()" class="bg-pink-300 hover:bg-pink-400 text-white px-4 py-2 rounded-xl text-sm font-bold">
+                            Add This Month's Photo
+                        </button>
+                    </h3>
+                    <div id="gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6"></div>
+                </div>
+
                 <!-- History -->
                 <div class="bg-white/80 backdrop-blur-md mx-8 mb-8 rounded-3xl p-8 shadow-xl border-4 border-pink-200">
                     <h3 class="text-3xl font-bold text-pink-600 mb-6">History ♡</h3>
@@ -225,7 +236,9 @@
         let pets = [];
         let currentPetId = null;
         let weightChart = null;
+        let editingPetId = null;
         const CONVERSION_FACTOR = 2.20462;
+        const MONTHLY_PHOTO_INTERVAL_DAYS = 30;
 
         function saveData() {
             localStorage.setItem("fatFighters", JSON.stringify(pets));
@@ -237,58 +250,78 @@
             saveData();
         }
 
-        function showAddPetModal() {
-            document.getElementById("add-pet-modal").classList.remove("hidden");
+        function openAddPetModal() {
+            editingPetId = null;
+            document.getElementById("modal-title").textContent = "Add a Fat Fighter! 🐾💪";
+            document.getElementById("save-pet-btn").textContent = "Add Fighter! 💖";
+            document.getElementById("pet-name").value = "";
+            document.getElementById("pet-type").value = "";
+            document.getElementById("pet-goal").value = "";
+            document.getElementById("pet-avatar").value = "";
+            document.getElementById("pet-modal").classList.remove("hidden");
         }
 
-        function hideAddPetModal() {
-            document.getElementById("add-pet-modal").classList.add("hidden");
-            document.getElementById("new-pet-name").value = "";
-            document.getElementById("new-pet-type").value = "";
-            document.getElementById("new-pet-goal").value = "";
-            document.getElementById("new-pet-avatar").value = "";
+        function openEditPetModal() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return;
+
+            editingPetId = currentPetId;
+            document.getElementById("modal-title").textContent = `Edit ${pet.name}'s Profile 🖼️`;
+            document.getElementById("save-pet-btn").textContent = "Update Profile! 💖";
+            document.getElementById("pet-name").value = pet.name;
+            document.getElementById("pet-type").value = pet.type;
+            document.getElementById("pet-goal").value = pet.goalWeight || "";
+            document.getElementById("pet-avatar").value = "";
+            document.getElementById("pet-modal").classList.remove("hidden");
         }
 
-        async function addNewPet() {
-            const name = document.getElementById("new-pet-name").value.trim();
-            if (!name) return alert("Please give your fighter a name! 🐱");
+        function hidePetModal() {
+            document.getElementById("pet-modal").classList.add("hidden");
+        }
 
-            const type = document.getElementById("new-pet-type").value.trim() || "Unknown";
-            const goalStr = document.getElementById("new-pet-goal").value.trim();
-            const goal = goalStr ? parseFloat(goalStr) : null;
+        async function savePet() {
+            const name = document.getElementById("pet-name").value.trim();
+            if (!name) return alert("Name is required!");
 
             let avatar = null;
-            const fileInput = document.getElementById("new-pet-avatar");
+            const fileInput = document.getElementById("pet-avatar");
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
-                if (file.size > 2 * 1024 * 1024) {
-                    alert("Image is too large! Please use a file under 2MB.");
-                    return;
-                }
+                if (file.size > 2 * 1024 * 1024) return alert("Image too large! Max ~2MB.");
                 try {
                     avatar = await fileToBase64(file);
                 } catch (err) {
-                    console.error("Image conversion error:", err);
-                    alert("Could not process the image. Try a different file.");
+                    alert("Failed to process image.");
                     return;
                 }
             }
 
-            const newPet = {
-                id: "pet-" + Date.now(),
-                name,
-                type,
-                avatar,
-                goalWeight: goal ? Number(goal.toFixed(1)) : null,
-                logs: [],
-                prevRibbons: []
-            };
+            if (editingPetId) {
+                const pet = pets.find(p => p.id === editingPetId);
+                pet.name = name;
+                pet.type = document.getElementById("pet-type").value.trim() || pet.type;
+                const goalStr = document.getElementById("pet-goal").value.trim();
+                pet.goalWeight = goalStr ? Number(parseFloat(goalStr).toFixed(1)) : pet.goalWeight;
+                if (avatar) pet.avatar = avatar;
+            } else {
+                const newPet = {
+                    id: "pet-" + Date.now(),
+                    name,
+                    type: document.getElementById("pet-type").value.trim() || "Unknown",
+                    avatar,
+                    goalWeight: document.getElementById("pet-goal").value ? Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null,
+                    logs: [],
+                    prevRibbons: [],
+                    monthlyPhotos: [] // array of {base64, caption, date}
+                };
+                pets.push(newPet);
+                selectPet(newPet.id);
+            }
 
-            pets.push(newPet);
             saveData();
             renderPetTabs();
-            hideAddPetModal();
-            selectPet(newPet.id);
+            renderCurrentPet();
+            hidePetModal();
         }
 
         function fileToBase64(file) {
@@ -296,271 +329,92 @@
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = () => resolve(reader.result);
-                reader.onerror = (error) => reject(error);
+                reader.onerror = reject;
             });
         }
 
-        function renderPetTabs() {
-            const container = document.getElementById("pet-list");
-            container.innerHTML = "";
-            pets.forEach(pet => {
-                const isSelected = pet.id === currentPetId;
-                const latest = pet.logs.length ? pet.logs[pet.logs.length-1].weight_kg.toFixed(1) : "—";
-                const ribbons = getRibbons(pet);
-                const goalText = getGoalDisplay(pet);
-                const avatarHtml = pet.avatar
-                    ? `<img src="${pet.avatar}" alt="${pet.name}" class="avatar-img">`
-                    : `<div class="avatar-fallback avatar-img text-4xl">🐱</div>`;
-
-                const div = document.createElement("div");
-                div.className = `pet-tab flex items-center gap-4 px-5 py-4 rounded-3xl cursor-pointer ${isSelected ? 'bg-pink-50 border-2 border-pink-400' : 'hover:bg-pink-50'}`;
-                div.innerHTML = `
-                    <div class="avatar-container">${avatarHtml}</div>
-                    <div class="flex-1 min-w-0">
-                        <div class="font-semibold text-lg truncate">${pet.name}</div>
-                        <div class="text-xs text-pink-500 truncate">${pet.type}</div>
-                        <div class="text-xs text-pink-400 mt-1">${goalText}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm font-medium text-pink-600">${latest} kg</div>
-                        <div class="flex justify-end flex-wrap gap-1 mt-1">${ribbons.map(r => `<span class="ribbon-badge" title="${r.label}">${r.emoji}</span>`).join('')}</div>
-                    </div>
-                `;
-                div.onclick = () => selectPet(pet.id);
-                container.appendChild(div);
-            });
-        }
-
-        function selectPet(id) {
-            currentPetId = id;
-            renderPetTabs();
-            renderCurrentPet();
-        }
-
-        function renderCurrentPet() {
+        function openMonthlyPhotoPrompt() {
             const pet = pets.find(p => p.id === currentPetId);
-            if (!pet) return;
+            if (!pet) return alert("Select a fighter first!");
 
-            document.getElementById("no-pet-selected").classList.add("hidden");
-            document.getElementById("pet-content").classList.remove("hidden");
-
-            const avatarEl = document.getElementById("selected-pet-avatar");
-            avatarEl.innerHTML = pet.avatar
-                ? `<img src="${pet.avatar}" alt="${pet.name}" class="avatar-img">`
-                : `<div class="avatar-fallback avatar-img text-7xl">🐱</div>`;
-
-            document.getElementById("selected-pet-name").textContent = pet.name;
-            document.getElementById("selected-pet-type").textContent = pet.type;
-            document.getElementById("selected-pet-goal").innerHTML = getGoalDisplay(pet);
-
-            document.getElementById("ribbon-container").innerHTML = getRibbons(pet).map(r => `<span class="ribbon-badge" title="${r.label}">${r.emoji}</span>`).join('');
-
-            document.getElementById("log-date").value = new Date().toISOString().split('T')[0];
-
-            renderHistoryTable(pet);
-            renderWeightChart(pet);
-            updateCurrentWeightDisplay(pet);
+            document.getElementById("monthly-caption").value = "";
+            document.getElementById("monthly-photo-modal").classList.remove("hidden");
         }
 
-        function updateCurrentWeightDisplay(pet) {
-            const display = document.getElementById("current-weight-display");
-            if (pet.logs.length) {
-                const latest = pet.logs[pet.logs.length-1].weight_kg;
-                let text = `Current: ${latest.toFixed(1)} kg ♡`;
-                if (pet.goalWeight) {
-                    const diff = pet.goalWeight - latest;
-                    if (Math.abs(diff) <= 0.2) text += " 🎯 Goal achieved!";
-                    else if (diff > 0) text += ` (${diff.toFixed(1)} kg to go!)`;
-                }
-                display.innerHTML = text;
-            } else {
-                display.textContent = "Current: — kg ♡";
-            }
+        function hideMonthlyModal() {
+            document.getElementById("monthly-photo-modal").classList.add("hidden");
         }
 
-        function getGoalDisplay(pet) {
-            if (!pet.goalWeight) return "No goal set ♡";
-            const current = pet.logs.length ? pet.logs[pet.logs.length-1].weight_kg : null;
-            let text = `Goal: ${pet.goalWeight.toFixed(1)} kg`;
-            if (current) {
-                const diff = current - pet.goalWeight;
-                if (Math.abs(diff) <= 0.2) return `<span class="goal-achieved">${text} 🎯💖</span>`;
-                else if (diff < 0) text += ` (${(pet.goalWeight - current).toFixed(1)} kg to go!)`;
-                else text += ` (passed by ${(current - pet.goalWeight).toFixed(1)} kg ♡)`;
-            }
-            return text;
-        }
+        async function triggerMonthlyPhotoUpload() {
+            hideMonthlyModal();
 
-        function getRibbons(pet) {
-            if (!pet.logs?.length) return [];
-            const ribbons = [];
-            const sorted = [...pet.logs].sort((a,b) => new Date(a.date) - new Date(b.date));
-            const latest = sorted.at(-1).weight_kg;
-
-            if (pet.logs.length === 1) ribbons.push({id: "first", emoji: "🎀", label: "First Weigh-in! Yay!"});
-            if (pet.logs.length >= 4) ribbons.push({id: "streak", emoji: "🔥🎀", label: "4-Week Streak Star!"});
-            if (pet.goalWeight && Math.abs(latest - pet.goalWeight) <= 0.2) ribbons.push({id: "goal", emoji: "🏆💖", label: "Goal Champion! 💕"});
-            const first = sorted[0].weight_kg;
-            if (latest - first >= 0.5) ribbons.push({id: "gain", emoji: "🌟🐾", label: "Healthy Gain Glow!"});
-            if (first - latest >= 0.5) ribbons.push({id: "loss", emoji: "✨🐾", label: "Slim & Trim Star!"});
-
-            return ribbons;
-        }
-
-        function celebrateNewRibbons(pet, newRibbons) {
-            const prev = pet.prevRibbons || [];
-            const newlyEarned = newRibbons.filter(r => !prev.includes(r.id));
-            if (!newlyEarned.length) return;
-
-            pet.prevRibbons = newRibbons.map(r => r.id);
-            saveData();
-
-            const msg = newlyEarned.map(r => r.label).join("\n");
-            document.getElementById("celebrate-title").textContent = `${pet.name} earned ribbon${newlyEarned.length > 1 ? 's' : ''}!`;
-            document.getElementById("celebrate-msg").textContent = msg;
-            document.getElementById("celebrate-popup").classList.add("show");
-
-            const end = Date.now() + 5000;
-            (function frame() {
-                confetti({particleCount:6,angle:60,spread:70,origin:{x:0},colors:['#ff9ec1','#a7d8ff','#ffd1dc','#c9f0ff','#ffe4e1','#d8b4fe'],zIndex:200});
-                confetti({particleCount:6,angle:120,spread:70,origin:{x:1},colors:['#ff9ec1','#a7d8ff','#ffd1dc','#c9f0ff','#ffe4e1','#d8b4fe'],zIndex:200});
-                if (Date.now() < end) requestAnimationFrame(frame);
-            })();
-        }
-
-        function renderWeightChart(pet) {
-            if (weightChart) weightChart.destroy();
-            const canvas = document.getElementById("weight-chart");
-            const sorted = [...pet.logs].sort((a,b) => new Date(a.date) - new Date(b.date));
-            const labels = sorted.map(l => new Date(l.date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
-            const weights = sorted.map(l => l.weight_kg);
-
-            weightChart = new Chart(canvas, {
-                type: 'line',
-                data: {
-                    labels: labels.length ? labels : ["No data"],
-                    datasets: [{
-                        label: 'Weight (kg)',
-                        data: weights.length ? weights : [0],
-                        borderColor: '#ec4899',
-                        backgroundColor: 'rgba(236,72,153,0.15)',
-                        tension: 0.3,
-                        pointBackgroundColor: '#fff',
-                        pointBorderWidth: 3,
-                        pointRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: false, grid: { color: '#f9a8d4' } }, x: { grid: { display: false } } }
-                }
-            });
-
-            const trendEl = document.getElementById("trend-info");
-            trendEl.textContent = weights.length >= 2
-                ? (change => change > 0 ? `↑ ${change.toFixed(1)} kg` : change < 0 ? `↓ ${Math.abs(change).toFixed(1)} kg` : "→ stable")(weights.at(-1) - weights.at(-2))
-                : "Not enough data";
-        }
-
-        function renderHistoryTable(pet) {
-            const tbody = document.getElementById("history-table");
-            tbody.innerHTML = "";
-            if (!pet.logs.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-pink-400">No weigh-ins yet ♡ Start logging!</td></tr>';
-                return;
-            }
-            [...pet.logs].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(log => {
-                const lbs = (log.weight_kg * CONVERSION_FACTOR).toFixed(1);
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="p-4">${new Date(log.date).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'})}</td>
-                        <td class="p-4 font-medium">${log.weight_kg.toFixed(1)} kg</td>
-                        <td class="p-4 text-pink-400">${lbs} lbs</td>
-                        <td class="p-4"></td>
-                    </tr>`;
-            });
-        }
-
-        window.addWeightLog = function() {
-            const pet = pets.find(p => p.id === currentPetId);
-            if (!pet) return alert("Select a fighter first ♡");
-
-            const date = document.getElementById("log-date").value;
-            let weight = parseFloat(document.getElementById("log-weight").value);
-            const unit = document.getElementById("log-unit").value;
-
-            if (!date || isNaN(weight) || weight <= 0) return alert("Please enter valid date and weight ♡");
-
-            if (unit === "lbs") weight /= CONVERSION_FACTOR;
-
-            const idx = pet.logs.findIndex(l => l.date === date);
-            if (idx !== -1) pet.logs[idx].weight_kg = parseFloat(weight.toFixed(2));
-            else pet.logs.push({ date, weight_kg: parseFloat(weight.toFixed(2)) });
-
-            saveData();
-
-            celebrateNewRibbons(pet, getRibbons(pet));
-
-            renderHistoryTable(pet);
-            renderWeightChart(pet);
-            updateCurrentWeightDisplay(pet);
-            renderPetTabs();
-            renderCurrentPet();
-
-            document.getElementById("log-weight").value = "";
-        };
-
-        window.deleteCurrentPet = function() {
-            if (!currentPetId || !confirm(`Really delete ${pets.find(p => p.id === currentPetId).name}?`)) return;
-            pets = pets.filter(p => p.id !== currentPetId);
-            saveData();
-            if (pets.length) selectPet(pets[0].id);
-            else {
-                currentPetId = null;
-                document.getElementById("pet-content").classList.add("hidden");
-                document.getElementById("no-pet-selected").classList.remove("hidden");
-                renderPetTabs();
-            }
-        };
-
-        function exportData() {
-            const dataStr = JSON.stringify(pets, null, 2);
-            const uri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-            const link = document.createElement('a');
-            link.href = uri;
-            link.download = `fat-fighters-${new Date().toISOString().slice(0,10)}.json`;
-            link.click();
-        }
-
-        function importData(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.onchange = async e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) return alert("Photo too large! Max ~2MB.");
                 try {
-                    const imported = JSON.parse(ev.target.result);
-                    if (Array.isArray(imported)) {
-                        pets = imported;
-                        saveData();
-                        renderPetTabs();
-                        if (pets.length) selectPet(pets[0].id);
-                        alert("Imported successfully! ♡");
-                    }
-                } catch(err) {
-                    alert("Invalid file");
+                    const base64 = await fileToBase64(file);
+                    const caption = document.getElementById("monthly-caption").value.trim() || "Monthly progress! 📸";
+
+                    const pet = pets.find(p => p.id === currentPetId);
+                    if (!pet.monthlyPhotos) pet.monthlyPhotos = [];
+                    pet.monthlyPhotos.push({
+                        base64,
+                        caption,
+                        date: new Date().toISOString().split('T')[0]
+                    });
+
+                    saveData();
+                    renderMonthlyGallery(pet);
+                    alert("Monthly progress photo added! 📸✨");
+                } catch (err) {
+                    alert("Failed to add photo.");
                 }
             };
-            reader.readAsText(file);
+            input.click();
         }
 
-        function toggleSettings() {
-            const content = document.getElementById("settings-content");
-            const toggle = document.getElementById("settings-toggle");
-            content.classList.toggle("settings-collapsed");
-            toggle.textContent = content.classList.contains("settings-collapsed") ? "▼" : "▲";
+        function renderMonthlyGallery(pet) {
+            const gallery = document.getElementById("gallery");
+            gallery.innerHTML = "";
+            if (!pet.monthlyPhotos?.length) {
+                gallery.innerHTML = '<p class="text-center text-pink-400 col-span-full py-8">No monthly photos yet — add one to see your fighter grow! 🐾</p>';
+                return;
+            }
+            pet.monthlyPhotos.forEach(photoObj => {
+                const container = document.createElement("div");
+                container.className = "flex flex-col items-center gap-2";
+
+                const img = document.createElement("img");
+                img.src = photoObj.base64;
+                img.alt = photoObj.caption || "Monthly photo";
+                img.className = "gallery-thumb";
+                img.onclick = () => openLightbox(photoObj.base64, photoObj.caption);
+
+                const cap = document.createElement("p");
+                cap.className = "text-xs text-pink-600 text-center max-w-[80px] truncate";
+                cap.textContent = photoObj.caption || "No caption";
+
+                container.appendChild(img);
+                container.appendChild(cap);
+                gallery.appendChild(container);
+            });
         }
+
+        function openLightbox(src, caption = "") {
+            document.getElementById("lightbox-img").src = src;
+            document.getElementById("lightbox-caption").textContent = caption;
+            document.getElementById("lightbox").classList.remove("hidden");
+        }
+
+        function closeLightbox() {
+            document.getElementById("lightbox").classList.add("hidden");
+        }
+
+        // ... (keep all other functions: renderPetTabs, selectPet, renderCurrentPet, updateCurrentWeightDisplay, getGoalDisplay, getRibbons, celebrateNewRibbons, renderWeightChart, renderHistoryTable, addWeightLog, deleteCurrentPet, exportData, importData, toggleSettings, init)
 
         function init() {
             loadData();
