@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Fat Fighters">
@@ -13,68 +13,75 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Nunito', system-ui, sans-serif; background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%); }
-        .pet-tab { transition: all 0.2s; }
-        .pet-tab:hover { transform: scale(1.08); }
         .avatar-img { width:100%; height:100%; object-fit:cover; object-position:center; }
-        .avatar-fallback { display:flex; align-items:center; justify-content:center; background:#fce7f3; font-size:2rem; }
-        .goal-achieved { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
+        .avatar-fallback { display:flex; align-items:center; justify-content:center; background:#fce7f3; font-size:2.5rem; }
+        .pet-tab { transition:all 0.3s; }
+        .pet-tab:hover { transform:scale(1.08); }
+        .settings-menu { position:fixed; bottom:0; left:0; right:0; background:white; border-top:2px solid #fbcfe8; border-radius:20px 20px 0 0; padding:20px; box-shadow:0 -5px 20px rgba(0,0,0,0.1); z-index:999; }
     </style>
 </head>
 <body class="min-h-screen text-pink-900">
 
     <!-- Add/Edit Pet Modal -->
     <div id="pet-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-        <div class="bg-white rounded-3xl p-8 w-full max-w-lg border-8 border-pink-300 shadow-2xl">
-            <h3 id="modal-title" class="text-3xl font-bold text-pink-600 mb-6 text-center">Add a Fat Fighter! 🐾💪</h3>
-            <div class="space-y-5">
-                <input id="pet-name" type="text" placeholder="Name (required)" class="w-full border-2 border-pink-300 rounded-2xl px-5 py-4 text-xl focus:outline-none focus:border-pink-500 bg-pink-50">
-                <input id="pet-type" type="text" placeholder="Type / Breed (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-5 py-4 text-xl focus:outline-none focus:border-pink-500 bg-pink-50">
-                <input id="pet-goal" type="number" step="0.1" placeholder="Goal weight in kg (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-5 py-4 text-xl focus:outline-none focus:border-pink-500 bg-pink-50">
-                <input id="pet-avatar" type="file" accept="image/*" class="w-full text-lg text-pink-500">
-                <div class="flex gap-3">
-                    <button onclick="hidePetModal()" class="flex-1 py-4 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl">Cancel</button>
-                    <button onclick="savePet()" class="flex-1 py-4 bg-pink-500 text-white font-bold rounded-2xl">Add Fighter! 💖</button>
+        <div class="bg-white rounded-3xl p-10 w-full max-w-lg border-8 border-pink-300 shadow-2xl">
+            <h3 id="modal-title" class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Fat Fighter! 🐾💪</h3>
+            <div class="space-y-6">
+                <input id="pet-name" type="text" placeholder="Name" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                <input id="pet-type" type="text" placeholder="Type / Breed (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                <input id="pet-goal" type="number" step="0.1" placeholder="Goal weight kg (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                <input id="pet-avatar" type="file" accept="image/*" class="w-full text-lg">
+                <div class="flex gap-4">
+                    <button onclick="hidePetModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl hover:bg-pink-50">Cancel 😿</button>
+                    <button onclick="savePet()" class="flex-1 py-5 bg-pink-400 text-white font-bold text-xl rounded-2xl hover:bg-pink-500 shadow-lg">Add Fighter! 💖</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Celebration -->
-    <div id="celebrate-popup" class="hidden fixed inset-0 bg-white/90 flex items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-3xl border-8 border-pink-300 text-center">
-            <div class="text-7xl mb-4">🎉🎀</div>
-            <h2 id="celebrate-title" class="text-3xl font-bold text-pink-600">Yayyyy!</h2>
-            <p id="celebrate-msg" class="text-xl text-pink-500 my-4"></p>
-            <button onclick="document.getElementById('celebrate-popup').classList.add('hidden')" class="bg-pink-500 text-white px-8 py-3 rounded-2xl">Continue</button>
+    <!-- Settings Menu (bottom sheet) -->
+    <div id="settings-menu" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t-4 border-pink-300 rounded-t-3xl p-6 shadow-2xl z-50">
+        <div class="space-y-6 text-lg">
+            <div onclick="exportData()" class="flex items-center gap-3 cursor-pointer hover:text-pink-600">✨ Export Data</div>
+            <label class="flex items-center gap-3 cursor-pointer hover:text-pink-600">
+                💌 Import Data <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+            </label>
+            <div onclick="deleteCurrentPet()" class="flex items-center gap-3 text-red-500 cursor-pointer hover:text-red-600">🗑️ Delete Current Fighter</div>
+            <div onclick="hideSettingsMenu()" class="text-center text-pink-400 font-medium cursor-pointer pt-4">Close</div>
         </div>
     </div>
 
     <div class="flex flex-col h-screen">
-        <!-- Top bar (mobile friendly) -->
+        <!-- Top bar -->
         <div class="bg-white border-b border-pink-200 px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">🐱</div>
                 <h1 class="text-2xl font-bold text-pink-600">Fat Fighters</h1>
             </div>
-            <button onclick="openAddPetModal()" class="bg-pink-500 text-white px-5 py-2 rounded-3xl text-sm font-bold">+ Add</button>
+            <div class="flex items-center gap-4">
+                <button onclick="openAddPetModal()" class="bg-pink-500 text-white px-5 py-2 rounded-3xl text-sm font-bold">+ Add</button>
+                <button onclick="showSettingsMenu()" class="text-3xl text-pink-500">⋯</button>
+            </div>
         </div>
 
-        <!-- Pet selector (horizontal scroll on iPhone) -->
-        <div class="bg-white border-b border-pink-100 p-3 overflow-x-auto whitespace-nowrap flex gap-3" id="pet-tabs"></div>
+        <!-- Horizontal pet tabs -->
+        <div class="bg-white border-b border-pink-100 p-3 overflow-x-auto flex gap-3" id="pet-tabs"></div>
 
         <!-- Main content -->
-        <div class="flex-1 overflow-auto" id="main-content">
-            <div id="no-pet-selected" class="flex flex-col items-center justify-center h-full text-center px-6">
+        <div class="flex-1 overflow-auto p-4" id="main-content">
+            <div id="no-pet-selected" class="flex flex-col items-center justify-center h-full text-center">
                 <div class="text-8xl mb-6">🐱💪</div>
-                <h3 class="text-3xl font-bold text-pink-600">Add your first fighter!</h3>
+                <h3 class="text-3xl font-bold text-pink-500">Add your first fighter!</h3>
                 <p class="text-pink-400 mt-2">Tap + Add above</p>
             </div>
 
-            <div id="pet-content" class="hidden p-6 space-y-8">
-                <!-- Weight input -->
+            <div id="pet-content" class="hidden space-y-8">
+                <!-- Edit button + Weigh-in -->
                 <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
-                    <h3 class="text-2xl font-bold mb-4">This Week's Weigh-in</h3>
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold">This Week's Weigh-in</h3>
+                        <button onclick="openEditPetModal()" class="bg-pink-300 hover:bg-pink-400 text-white px-5 py-2 rounded-2xl text-sm font-bold">Edit Profile ✏️</button>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <input id="log-date" type="date" class="border-2 border-pink-200 rounded-2xl p-4">
                         <div class="relative">
@@ -91,7 +98,7 @@
                 <!-- Chart -->
                 <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
                     <h3 class="text-2xl font-bold mb-4">Weight Journey</h3>
-                    <div class="h-72"><canvas id="weight-chart"></canvas></div>
+                    <div class="h-64"><canvas id="weight-chart"></canvas></div>
                 </div>
 
                 <!-- History -->
@@ -107,6 +114,7 @@
         let pets = [];
         let currentPetId = null;
         let weightChart = null;
+        let editingPetId = null;
         const CONVERSION_FACTOR = 2.20462;
 
         function saveData() { localStorage.setItem("fatFighters", JSON.stringify(pets)); }
@@ -116,6 +124,14 @@
         }
 
         function openAddPetModal() {
+            editingPetId = null;
+            document.getElementById("pet-modal").classList.remove("hidden");
+        }
+
+        function openEditPetModal() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return;
+            editingPetId = currentPetId;
             document.getElementById("pet-modal").classList.remove("hidden");
         }
 
@@ -133,20 +149,29 @@
                 avatar = await fileToBase64(fileInput.files[0]);
             }
 
-            const newPet = {
-                id: "pet-" + Date.now(),
-                name,
-                type: document.getElementById("pet-type").value.trim() || "Unknown",
-                avatar,
-                goalWeight: parseFloat(document.getElementById("pet-goal").value) || null,
-                logs: []
-            };
+            if (editingPetId) {
+                const pet = pets.find(p => p.id === editingPetId);
+                pet.name = name;
+                pet.type = document.getElementById("pet-type").value.trim() || pet.type;
+                const goalStr = document.getElementById("pet-goal").value.trim();
+                pet.goalWeight = goalStr ? Number(parseFloat(goalStr).toFixed(1)) : pet.goalWeight;
+                if (avatar) pet.avatar = avatar;
+            } else {
+                const newPet = {
+                    id: "pet-" + Date.now(),
+                    name,
+                    type: document.getElementById("pet-type").value.trim() || "Unknown",
+                    avatar,
+                    goalWeight: document.getElementById("pet-goal").value ? Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null,
+                    logs: []
+                };
+                pets.push(newPet);
+                selectPet(newPet.id);
+            }
 
-            pets.push(newPet);
             saveData();
             renderPetTabs();
             hidePetModal();
-            selectPet(newPet.id);
         }
 
         function fileToBase64(file) {
@@ -163,12 +188,12 @@
             pets.forEach(pet => {
                 const isSelected = pet.id === currentPetId;
                 const div = document.createElement("div");
-                div.className = `pet-tab inline-flex flex-col items-center px-4 py-2 rounded-2xl cursor-pointer ${isSelected ? 'bg-pink-100' : 'hover:bg-pink-50'}`;
+                div.className = `pet-tab inline-flex flex-col items-center px-4 py-2 rounded-2xl cursor-pointer ${isSelected ? 'bg-pink-100' : ''}`;
                 div.innerHTML = `
                     <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-pink-300 mb-1">
                         ${pet.avatar ? `<img src="${pet.avatar}" class="avatar-img">` : `<div class="avatar-fallback">🐱</div>`}
                     </div>
-                    <div class="text-xs font-medium text-center">${pet.name}</div>
+                    <div class="text-xs font-medium">${pet.name}</div>
                 `;
                 div.onclick = () => selectPet(pet.id);
                 container.appendChild(div);
@@ -189,15 +214,35 @@
             document.getElementById("pet-content").classList.remove("hidden");
 
             const avatarEl = document.getElementById("selected-pet-avatar");
-            avatarEl.innerHTML = pet.avatar
-                ? `<img src="${pet.avatar}" class="avatar-img">`
-                : `<div class="avatar-fallback">🐱</div>`;
+            avatarEl.innerHTML = pet.avatar ? `<img src="${pet.avatar}" class="avatar-img">` : `<div class="avatar-fallback">🐱</div>`;
 
             document.getElementById("selected-pet-name").textContent = pet.name;
             document.getElementById("selected-pet-type").textContent = pet.type || "Unknown";
-
-            document.getElementById("log-date").value = new Date().toISOString().split('T')[0];
         }
+
+        function showSettingsMenu() {
+            document.getElementById("settings-menu").classList.remove("hidden");
+        }
+
+        function hideSettingsMenu() {
+            document.getElementById("settings-menu").classList.add("hidden");
+        }
+
+        window.deleteCurrentPet = function() {
+            if (!currentPetId || !confirm("Delete this fighter and all data?")) return;
+            pets = pets.filter(p => p.id !== currentPetId);
+            saveData();
+            if (pets.length) selectPet(pets[0].id);
+            else {
+                currentPetId = null;
+                document.getElementById("pet-content").classList.add("hidden");
+                document.getElementById("no-pet-selected").classList.remove("hidden");
+                renderPetTabs();
+            }
+            hideSettingsMenu();
+        };
+
+        // ... (rest of the code: addWeightLog, renderWeightChart, renderHistoryTable, exportData, importData, etc. remain the same as previous version)
 
         function init() {
             loadData();
