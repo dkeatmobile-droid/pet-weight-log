@@ -4,32 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Fat Fighters ♡ Weight Diary 🐾💕</title>
+    <title>Cat Fat Fighters 🐾💕</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Nunito', system-ui, sans-serif; background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%); }
         .avatar-img { width:100%; height:100%; object-fit:cover; object-position:center; }
-        .avatar-fallback { display:flex; align-items:center; justify-content:center; background:#fce7f3; font-size:2.5rem; }
         .pet-tab { transition:all 0.3s; }
         .pet-tab:hover { transform:scale(1.08); }
     </style>
 </head>
 <body class="min-h-screen text-pink-900">
 
-    <!-- Add Pet Modal -->
+    <!-- Add/Edit Pet Modal -->
     <div id="pet-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
         <div class="bg-white rounded-3xl p-8 w-full max-w-lg border-8 border-pink-300 shadow-2xl">
-            <h3 class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Fat Fighter! 🐾💪</h3>
+            <h3 id="modal-title" class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Cat! 🐾</h3>
             <div class="space-y-6">
                 <input id="pet-name" type="text" placeholder="Name (required)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl">
-                <input id="pet-type" type="text" placeholder="Type / Breed (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl">
+                <input id="pet-type" type="text" placeholder="Breed (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl">
                 <input id="pet-goal" type="number" step="0.1" placeholder="Goal weight kg (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl">
                 <input id="pet-avatar" type="file" accept="image/*" class="w-full text-lg">
                 <div class="flex gap-4">
                     <button onclick="hidePetModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl">Cancel</button>
-                    <button onclick="savePet()" class="flex-1 py-5 bg-pink-500 text-white font-bold rounded-2xl">Add Fighter! 💖</button>
+                    <button onclick="savePet()" class="flex-1 py-5 bg-pink-500 text-white font-bold rounded-2xl">Add Cat! 💖</button>
                 </div>
             </div>
         </div>
@@ -40,22 +40,23 @@
         <div class="bg-white border-b border-pink-200 px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">🐱</div>
-                <h1 class="text-2xl font-bold text-pink-600">Fat Fighters</h1>
+                <h1 class="text-2xl font-bold text-pink-600">Cat Fat Fighters</h1>
             </div>
-            <button onclick="openAddPetModal()" class="bg-pink-500 text-white px-5 py-2 rounded-3xl text-sm font-bold">+ Add</button>
+            <button onclick="openAddPetModal()" class="bg-pink-500 text-white px-5 py-2 rounded-3xl text-sm font-bold">+ Add Cat</button>
         </div>
 
-        <!-- Pet tabs -->
+        <!-- Pet tabs (horizontal scroll) -->
         <div class="bg-white border-b border-pink-100 p-3 overflow-x-auto flex gap-3" id="pet-tabs"></div>
 
         <!-- Main content -->
         <div class="flex-1 overflow-auto p-6" id="main-content">
             <div id="no-pet-selected" class="flex flex-col items-center justify-center h-full text-center">
-                <div class="text-8xl mb-6">🐱💪</div>
-                <h3 class="text-3xl font-bold text-pink-500">Add your first fighter!</h3>
+                <div class="text-8xl mb-6">🐱</div>
+                <h3 class="text-3xl font-bold text-pink-500">Add your first cat!</h3>
             </div>
 
             <div id="pet-content" class="hidden space-y-8">
+                <!-- Weight input for this cat -->
                 <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-2xl font-bold">This Week's Weigh-in</h3>
@@ -73,6 +74,18 @@
                     </div>
                     <button onclick="addWeightLog()" class="mt-6 w-full bg-pink-500 text-white py-4 rounded-3xl font-bold">SAVE WEIGHT 💖</button>
                 </div>
+
+                <!-- Graph for this cat -->
+                <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
+                    <h3 class="text-2xl font-bold mb-4">Weight Journey</h3>
+                    <div class="h-64"><canvas id="weight-chart"></canvas></div>
+                </div>
+
+                <!-- History for this cat -->
+                <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
+                    <h3 class="text-2xl font-bold mb-4">History</h3>
+                    <table class="w-full" id="history-table"></table>
+                </div>
             </div>
         </div>
     </div>
@@ -80,11 +93,12 @@
     <script>
         let pets = [];
         let currentPetId = null;
+        let weightChart = null;
         const CONVERSION_FACTOR = 2.20462;
 
-        function saveData() { localStorage.setItem("fatFighters", JSON.stringify(pets)); }
+        function saveData() { localStorage.setItem("catFatFighters", JSON.stringify(pets)); }
         function loadData() {
-            const saved = localStorage.getItem("fatFighters");
+            const saved = localStorage.getItem("catFatFighters");
             pets = saved ? JSON.parse(saved) : [];
         }
 
@@ -151,31 +165,85 @@
         function selectPet(id) {
             currentPetId = id;
             renderPetTabs();
+            renderCurrentPet();
+        }
+
+        function renderCurrentPet() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return;
+
             document.getElementById("no-pet-selected").classList.add("hidden");
             document.getElementById("pet-content").classList.remove("hidden");
+
+            document.getElementById("log-date").value = new Date().toISOString().split('T')[0];
+
+            renderHistoryTable(pet);
+            renderWeightChart(pet);
         }
 
         window.addWeightLog = function() {
             const pet = pets.find(p => p.id === currentPetId);
-            if (!pet) return alert("Select a fighter first!");
+            if (!pet) return alert("Select a cat first!");
 
             const date = document.getElementById("log-date").value;
             let weight = parseFloat(document.getElementById("log-weight").value);
             const unit = document.getElementById("log-unit").value;
 
-            if (!date || isNaN(weight) || weight <= 0) {
-                alert("Please enter a valid date and weight!");
-                return;
-            }
+            if (!date || isNaN(weight) || weight <= 0) return alert("Please enter a valid date and weight!");
 
             if (unit === "lbs") weight /= CONVERSION_FACTOR;
 
             pet.logs.push({ date, weight_kg: parseFloat(weight.toFixed(2)) });
             saveData();
 
-            alert("Weight saved! ✅");
+            alert("Weight saved for " + pet.name + " ✅");
             document.getElementById("log-weight").value = "";
+
+            renderHistoryTable(pet);
+            renderWeightChart(pet);
         };
+
+        function renderWeightChart(pet) {
+            if (weightChart) weightChart.destroy();
+            const canvas = document.getElementById("weight-chart");
+            const sorted = [...pet.logs].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const labels = sorted.map(l => new Date(l.date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
+            const weights = sorted.map(l => l.weight_kg);
+
+            weightChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels.length ? labels : ["No data"],
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: weights.length ? weights : [0],
+                        borderColor: '#ec4899',
+                        tension: 0.3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderWidth: 3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderHistoryTable(pet) {
+            const tbody = document.getElementById("history-table");
+            tbody.innerHTML = "";
+            if (!pet.logs.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-pink-400">No weigh-ins yet</td></tr>';
+                return;
+            }
+            [...pet.logs].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(log => {
+                const lbs = (log.weight_kg * CONVERSION_FACTOR).toFixed(1);
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-4">${new Date(log.date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})}</td>
+                        <td class="p-4 font-medium">${log.weight_kg.toFixed(1)} kg</td>
+                        <td class="p-4 text-pink-400">${lbs} lbs</td>
+                    </tr>`;
+            });
+        }
 
         function init() {
             loadData();
