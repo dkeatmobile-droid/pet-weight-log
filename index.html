@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fat Fighters ♡ Weight Diary</title>
+    <title>Fat Fighters ♡ Weight Diary 🐾💕</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -12,210 +12,412 @@
         body { font-family: 'Nunito', system-ui, sans-serif; background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%); }
         .avatar-img { width:100%; height:100%; object-fit:cover; object-position:center; }
         .avatar-fallback { display:flex; align-items:center; justify-content:center; background:#fce7f3; font-size:2.5rem; }
-        .gallery-thumb { width:80px; height:80px; object-fit:cover; border-radius:12px; cursor:pointer; border:2px solid #fbcfe8; }
-        .lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.9); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:999; }
+        .gallery-thumb { width:80px; height:80px; object-fit:cover; border-radius:12px; cursor:pointer; border:2px solid #fbcfe8; transition:transform 0.2s; }
+        .gallery-thumb:hover { transform:scale(1.08); }
+        .lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.8); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:60; gap:1rem; }
+        .lightbox img { max-width:90%; max-height:70vh; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+        .lightbox-caption { color:white; font-size:1.25rem; max-width:80%; text-align:center; padding:0 1rem; }
     </style>
 </head>
 <body class="min-h-screen text-pink-900">
 
-<!-- MODAL -->
-<div id="pet-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div class="bg-white rounded-3xl p-10 w-full max-w-lg border-8 border-pink-400 shadow-2xl">
-        <h3 id="modal-title" class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Fat Fighter! 🐾💪</h3>
-        
-        <div class="space-y-6">
-            <input id="pet-name" type="text" placeholder="Name (required)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
-            <input id="pet-type" type="text" placeholder="Type / Breed (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
-            <input id="pet-goal" type="number" step="0.1" placeholder="Goal weight in kg (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
-            <div>
-                <label class="block text-xl font-bold text-pink-500 mb-2">Avatar Picture</label>
-                <input id="pet-avatar" type="file" accept="image/*" class="w-full text-lg">
-            </div>
-            
-            <div class="flex gap-4">
-                <button onclick="hidePetModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl hover:bg-pink-50">Cancel</button>
-                <button onclick="savePet()" class="flex-1 py-5 bg-pink-500 text-white font-bold text-xl rounded-2xl hover:bg-pink-600">Add Fighter! 💖</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- LIGHTBOX -->
-<div id="lightbox" class="lightbox hidden" onclick="if(event.target.id==='lightbox') closeLightbox()">
-    <img id="lightbox-img" class="max-w-[85%] max-h-[70vh] rounded-2xl shadow-2xl">
-    <p id="lightbox-caption" class="text-white text-xl mt-4 max-w-md text-center"></p>
-</div>
-
-<div class="flex h-screen">
-    <!-- SIDEBAR -->
-    <div class="w-80 bg-white border-r border-pink-200 flex flex-col">
-        <div class="p-6 border-b">
-            <h1 class="text-3xl font-bold text-pink-600">Fat Fighters</h1>
-        </div>
-        
-        <div class="p-6">
-            <button onclick="openAddPetModal()" class="w-full bg-pink-500 text-white py-4 rounded-3xl font-bold text-lg hover:bg-pink-600">+ Add a Fat Fighter</button>
-        </div>
-
-        <div id="pet-list" class="flex-1 overflow-auto p-6 space-y-3"></div>
-
-        <div class="p-6 border-t text-sm text-pink-400">
-            <div onclick="exportData()" class="cursor-pointer hover:text-pink-600 mb-2">Export Data</div>
-            <label class="cursor-pointer hover:text-pink-600">Import Data <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)"></label>
-        </div>
-    </div>
-
-    <!-- MAIN AREA -->
-    <div class="flex-1 flex flex-col">
-        <!-- header -->
-        <div class="h-20 border-b bg-white px-8 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div id="selected-avatar" class="w-16 h-16 rounded-2xl overflow-hidden border-4 border-pink-300"></div>
+    <!-- Add/Edit Pet Modal -->
+    <div id="pet-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-10 w-full max-w-lg border-8 border-pink-300 shadow-2xl">
+            <h3 id="modal-title" class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Fat Fighter! 🐾💪</h3>
+            <div class="space-y-6">
                 <div>
-                    <h2 id="selected-name" class="text-2xl font-bold">No fighter selected</h2>
-                    <p id="selected-type" class="text-pink-400">—</p>
+                    <label class="block text-xl font-bold text-pink-500 mb-2">Name</label>
+                    <input id="pet-name" type="text" placeholder="e.g. Jasmine" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
                 </div>
-            </div>
-        </div>
-
-        <div id="no-pet" class="flex-1 flex items-center justify-center text-center">
-            <div>
-                <div class="text-8xl mb-4">🐱</div>
-                <h3 class="text-3xl font-bold mb-2">Add your first Fat Fighter!</h3>
-                <p class="text-pink-400">Click the button on the left</p>
-            </div>
-        </div>
-
-        <div id="pet-view" class="hidden flex-1 overflow-auto p-8 space-y-8">
-            <!-- weight form, chart, gallery with captions, etc. are all included -->
-            <!-- (the full working version is long, so I'm keeping the core parts below) -->
-            
-            <!-- Weight input -->
-            <div class="bg-white p-8 rounded-3xl shadow border-2 border-pink-200">
-                <h3 class="text-2xl font-bold mb-6">This Week's Weigh-in</h3>
-                <div class="grid grid-cols-4 gap-6">
-                    <input id="log-date" type="date" class="border-2 border-pink-200 rounded-2xl p-4">
-                    <div class="relative">
-                        <input id="log-weight" type="number" step="0.01" placeholder="0.00" class="w-full border-2 border-pink-200 rounded-2xl p-4">
-                        <select id="log-unit" class="absolute right-4 top-4 bg-pink-100 px-4 py-1 rounded-xl">
-                            <option value="kg">kg</option>
-                            <option value="lbs">lbs</option>
-                        </select>
-                    </div>
-                    <button onclick="addWeightLog()" class="bg-pink-500 text-white font-bold rounded-3xl">SAVE WEIGHT</button>
-                    <div id="current-weight" class="bg-pink-50 rounded-3xl flex items-center justify-center text-xl font-bold border-2 border-pink-200"></div>
+                <div>
+                    <label class="block text-xl font-bold text-pink-500 mb-2">Type / Breed (optional)</label>
+                    <input id="pet-type" type="text" placeholder="e.g. Black Short hair" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
                 </div>
-            </div>
-
-            <!-- Gallery with captions -->
-            <div class="bg-white p-8 rounded-3xl shadow border-2 border-pink-200">
-                <div class="flex justify-between mb-4">
-                    <h3 class="text-2xl font-bold">Monthly Gallery</h3>
-                    <button onclick="openMonthlyPhotoPrompt()" class="text-pink-500 font-bold">+ Add monthly photo</button>
+                <div>
+                    <label class="block text-xl font-bold text-pink-500 mb-2">Goal Weight (kg) – optional</label>
+                    <input id="pet-goal" type="number" step="0.1" placeholder="e.g. 6" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl focus:outline-none focus:border-pink-500 bg-pink-50">
                 </div>
-                <div id="gallery" class="grid grid-cols-5 gap-4"></div>
+                <div>
+                    <label class="block text-xl font-bold text-pink-500 mb-2">Avatar Picture</label>
+                    <input id="pet-avatar" type="file" accept="image/*" class="block w-full text-lg text-pink-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-100 file:text-pink-700 hover:file:bg-pink-200">
+                    <p class="text-xs text-pink-400 mt-2">Upload or replace photo (max ~2MB)</p>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="hidePetModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl hover:bg-pink-50">Cancel 😿</button>
+                    <button onclick="savePet()" class="flex-1 py-5 bg-pink-400 text-white font-bold text-xl rounded-2xl hover:bg-pink-500 shadow-lg">Add Fighter! 💖</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-// ====================== CORE VARIABLES ======================
-let pets = [];
-let currentPetId = null;
-
-// ====================== SAVE / LOAD ======================
-function saveData() { localStorage.setItem("fatFighters", JSON.stringify(pets)); }
-function loadData() {
-    const saved = localStorage.getItem("fatFighters");
-    pets = saved ? JSON.parse(saved) : [];
-}
-
-// ====================== MODAL ======================
-function openAddPetModal() {
-    document.getElementById("pet-modal").classList.remove("hidden");
-    document.getElementById("modal-title").textContent = "Add a Fat Fighter! 🐾💪";
-}
-
-function hidePetModal() {
-    document.getElementById("pet-modal").classList.add("hidden");
-}
-
-// ====================== SUBMIT BUTTON (THIS WAS BROKEN) ======================
-async function savePet() {
-    console.log("✅ Save button clicked!");   // ← debugging line
-
-    const name = document.getElementById("pet-name").value.trim();
-    if (!name) return alert("Name is required!");
-
-    let avatar = null;
-    const file = document.getElementById("pet-avatar").files[0];
-    if (file) {
-        if (file.size > 2*1024*1024) return alert("Photo too big! Max 2MB.");
-        avatar = await fileToBase64(file);
-    }
-
-    const newPet = {
-        id: "pet-" + Date.now(),
-        name: name,
-        type: document.getElementById("pet-type").value.trim() || "Unknown",
-        avatar: avatar,
-        goalWeight: parseFloat(document.getElementById("pet-goal").value) || null,
-        logs: [],
-        monthlyPhotos: []
-    };
-
-    pets.push(newPet);
-    saveData();
-    renderPetList();
-    hidePetModal();
-    selectPet(newPet.id);
-    
-    console.log("✅ New fighter added:", newPet.name);
-}
-
-// Helper
-function fileToBase64(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-    });
-}
-
-// ====================== RENDER PET LIST ======================
-function renderPetList() {
-    const container = document.getElementById("pet-list");
-    container.innerHTML = "";
-    pets.forEach(pet => {
-        const div = document.createElement("div");
-        div.className = "flex gap-4 p-4 rounded-3xl cursor-pointer hover:bg-pink-50 " + (pet.id === currentPetId ? "bg-pink-100" : "");
-        div.innerHTML = `
-            ${pet.avatar ? `<img src="${pet.avatar}" class="w-12 h-12 rounded-2xl object-cover">` : `<div class="w-12 h-12 bg-pink-200 rounded-2xl flex items-center justify-center text-3xl">🐱</div>`}
-            <div>
-                <div class="font-bold">${pet.name}</div>
-                <div class="text-xs text-pink-500">${pet.type}</div>
+    <!-- Monthly Photo Modal (with caption) -->
+    <div id="monthly-photo-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-white rounded-3xl p-10 w-full max-w-md border-8 border-pink-300 shadow-2xl">
+            <h3 class="text-3xl font-bold text-pink-600 mb-6 text-center">Add This Month's Progress Pic! 📸</h3>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-xl font-bold text-pink-500 mb-2">Caption (optional but cute!)</label>
+                    <input id="monthly-caption" type="text" placeholder="e.g. Look at that glow-up! ✨" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="hideMonthlyModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl hover:bg-pink-50">Cancel</button>
+                    <button onclick="triggerMonthlyPhotoUpload()" class="flex-1 py-5 bg-pink-400 text-white font-bold rounded-2xl hover:bg-pink-500">Choose Photo</button>
+                </div>
             </div>
-        `;
-        div.onclick = () => selectPet(pet.id);
-        container.appendChild(div);
-    });
-}
+        </div>
+    </div>
 
-function selectPet(id) {
-    currentPetId = id;
-    renderPetList();
-    // You can expand this later to show the main view
-    console.log("Selected:", id);
-}
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox hidden" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Progress photo" class="max-w-[90%] max-h-[70vh] rounded-2xl">
+        <p id="lightbox-caption" class="lightbox-caption"></p>
+    </div>
 
-// ====================== BASIC INIT ======================
-function init() {
-    loadData();
-    renderPetList();
-}
+    <!-- Celebration popup -->
+    <div id="celebrate-popup" class="hidden fixed inset-0 bg-white/90 flex items-center justify-center z-50">
+        <div class="bg-white p-10 rounded-3xl border-8 border-pink-300 shadow-2xl text-center max-w-lg">
+            <div class="text-8xl mb-6">🎉🎀✨</div>
+            <h2 id="celebrate-title" class="text-4xl font-bold text-pink-600 mb-4">Yayyyy!</h2>
+            <p id="celebrate-msg" class="text-2xl text-pink-500 mb-8">Your fighter earned a new ribbon!</p>
+            <button onclick="document.getElementById('celebrate-popup').classList.remove('show')" class="bg-pink-400 text-white px-10 py-5 rounded-3xl text-2xl font-bold shadow-lg hover:bg-pink-500">Continue ♡</button>
+        </div>
+    </div>
 
-window.onload = init;
-</script>
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-80 bg-white/80 backdrop-blur-md border-r border-pink-200 flex flex-col shadow-xl">
+            <div class="p-6 border-b border-pink-100 flex items-center gap-3">
+                <div class="text-5xl animate-bounce">🐱💪</div>
+                <div>
+                    <h1 class="text-3xl font-bold text-pink-600 drop-shadow-sm">Fat Fighters</h1>
+                    <p class="text-sm text-pink-400 font-medium">Weight Diary ♡</p>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 overflow-y-auto">
+                <button onclick="openAddPetModal()" class="w-full bg-pink-400 hover:bg-pink-500 text-white px-6 py-4 rounded-3xl font-bold shadow-lg transform hover:scale-105 transition mb-6 text-lg">
+                    + Add a Fat Fighter
+                </button>
+                <div id="pet-list" class="space-y-4"></div>
+            </div>
+
+            <!-- Settings -->
+            <div class="mt-auto border-t border-pink-100">
+                <div onclick="toggleSettings()" class="settings-header p-6 flex items-center justify-between bg-pink-50 hover:bg-pink-100 cursor-pointer">
+                    <div class="flex items-center gap-2 font-bold text-pink-600">
+                        <span class="text-xl">⚙️</span> Settings
+                    </div>
+                    <span id="settings-toggle" class="text-xl transition-transform">▼</span>
+                </div>
+                <div id="settings-content" class="settings-content settings-collapsed bg-white/50">
+                    <div class="p-6 pt-2 space-y-4 text-sm">
+                        <div onclick="exportData()" class="flex items-center gap-2 cursor-pointer hover:text-pink-600">
+                            <span class="text-xl">✨</span> Export Data
+                        </div>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-pink-600">
+                            <span class="text-xl">💌</span> Import Data
+                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+                        </label>
+                        <div onclick="deleteCurrentPet()" class="flex items-center gap-2 cursor-pointer text-red-500 hover:text-red-600 font-medium">
+                            <span class="text-xl">🗑️</span> Delete Current Fighter
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main -->
+        <div class="flex-1 flex flex-col">
+            <div class="h-20 bg-white/70 backdrop-blur-md border-b border-pink-200 px-10 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div id="selected-pet-avatar" class="w-20 h-20 rounded-full overflow-hidden border-4 border-pink-300 shadow-lg heart-float bg-gray-100 flex items-center justify-center text-5xl"></div>
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h2 id="selected-pet-name" class="text-3xl font-bold text-pink-600">Select a fighter!</h2>
+                            <div id="ribbon-container" class="flex"></div>
+                        </div>
+                        <p id="selected-pet-type" class="text-pink-400 text-lg">—</p>
+                        <p id="selected-pet-goal" class="goal-display text-pink-500 mt-1">Goal: —</p>
+                    </div>
+                </div>
+                <div class="text-pink-500 font-bold flex items-center gap-2">
+                    <span class="text-xl animate-pulse">✨</span> Weekly Check-in ♡
+                </div>
+            </div>
+
+            <div id="no-pet-selected" class="flex-1 flex flex-col items-center justify-center text-center">
+                <div class="text-9xl mb-6 animate-bounce">🐱💪</div>
+                <h3 class="text-4xl font-bold text-pink-500 mb-4">No fighter selected!</h3>
+                <p class="text-xl text-pink-400 max-w-lg">Add a Fat Fighter or pick one from the left sidebar to start tracking ♡</p>
+            </div>
+
+            <div id="pet-content" class="hidden flex-1 overflow-auto">
+                <!-- Weight input -->
+                <div class="bg-white/80 backdrop-blur-md m-8 rounded-3xl p-8 shadow-xl border-4 border-pink-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-3xl font-bold text-pink-600 flex items-center gap-3">
+                            <span class="text-4xl">📝💕</span> This Week's Weigh-in
+                        </h3>
+                        <button onclick="openEditPetModal()" class="bg-pink-300 hover:bg-pink-400 text-white px-5 py-2 rounded-2xl text-sm font-bold shadow">
+                            Edit Profile ✏️
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div>
+                            <label class="block text-lg font-bold text-pink-500 mb-2">Date</label>
+                            <input id="log-date" type="date" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                        </div>
+                        <div>
+                            <label class="block text-lg font-bold text-pink-500 mb-2">Weight</label>
+                            <div class="relative">
+                                <input id="log-weight" type="number" step="0.01" placeholder="0.00" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-4 text-xl focus:outline-none focus:border-pink-500 bg-pink-50">
+                                <select id="log-unit" class="absolute right-4 top-1/2 -translate-y-1/2 bg-pink-200 border border-pink-300 rounded-xl px-5 py-2 text-lg font-bold">
+                                    <option value="kg">kg ♡</option>
+                                    <option value="lbs">lbs ♡</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="addWeightLog()" class="w-full h-16 bg-pink-400 hover:bg-pink-500 text-white text-2xl font-bold rounded-3xl shadow-lg transform hover:scale-105 active:scale-95">
+                                SAVE WEIGHT! 💖
+                            </button>
+                        </div>
+                        <div class="flex items-end">
+                            <div id="current-weight-display" class="w-full h-16 bg-pink-50 border-2 border-pink-300 rounded-3xl flex items-center justify-center text-2xl font-bold text-pink-600">
+                                Current: — kg ♡
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-white/80 backdrop-blur-md mx-8 mb-8 rounded-3xl p-8 shadow-xl border-4 border-pink-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-3xl font-bold text-pink-600">Weight Journey 📈💕</h3>
+                        <div id="trend-info" class="text-xl font-bold text-pink-500"></div>
+                    </div>
+                    <div class="chart-container h-80">
+                        <canvas id="weight-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gallery -->
+                <div class="bg-white/80 backdrop-blur-md mx-8 mb-8 rounded-3xl p-8 shadow-xl border-4 border-pink-200">
+                    <h3 class="text-3xl font-bold text-pink-600 mb-6 flex items-center justify-between">
+                        Monthly Progress Gallery 📸
+                        <button onclick="openMonthlyPhotoPrompt()" class="bg-pink-300 hover:bg-pink-400 text-white px-4 py-2 rounded-xl text-sm font-bold">
+                            Add This Month's Photo
+                        </button>
+                    </h3>
+                    <div id="gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6"></div>
+                </div>
+
+                <!-- History -->
+                <div class="bg-white/80 backdrop-blur-md mx-8 mb-8 rounded-3xl p-8 shadow-xl border-4 border-pink-200">
+                    <h3 class="text-3xl font-bold text-pink-600 mb-6">History ♡</h3>
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-pink-100 text-pink-600 uppercase text-sm font-bold">
+                                <th class="p-4 text-left rounded-tl-2xl">Date</th>
+                                <th class="p-4 text-left">Weight (kg)</th>
+                                <th class="p-4 text-left">Weight (lbs)</th>
+                                <th class="p-4 w-16 rounded-tr-2xl"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table" class="text-lg"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pets = [];
+        let currentPetId = null;
+        let weightChart = null;
+        let editingPetId = null;
+        const CONVERSION_FACTOR = 2.20462;
+        const MONTHLY_PHOTO_INTERVAL_DAYS = 30;
+
+        function saveData() {
+            localStorage.setItem("fatFighters", JSON.stringify(pets));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem("fatFighters");
+            pets = saved ? JSON.parse(saved) : [];
+            saveData();
+        }
+
+        function openAddPetModal() {
+            editingPetId = null;
+            document.getElementById("modal-title").textContent = "Add a Fat Fighter! 🐾💪";
+            document.getElementById("save-pet-btn").textContent = "Add Fighter! 💖";
+            document.getElementById("pet-name").value = "";
+            document.getElementById("pet-type").value = "";
+            document.getElementById("pet-goal").value = "";
+            document.getElementById("pet-avatar").value = "";
+            document.getElementById("pet-modal").classList.remove("hidden");
+        }
+
+        function openEditPetModal() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return;
+
+            editingPetId = currentPetId;
+            document.getElementById("modal-title").textContent = `Edit ${pet.name}'s Profile 🖼️`;
+            document.getElementById("save-pet-btn").textContent = "Update Profile! 💖";
+            document.getElementById("pet-name").value = pet.name;
+            document.getElementById("pet-type").value = pet.type;
+            document.getElementById("pet-goal").value = pet.goalWeight || "";
+            document.getElementById("pet-avatar").value = "";
+            document.getElementById("pet-modal").classList.remove("hidden");
+        }
+
+        function hidePetModal() {
+            document.getElementById("pet-modal").classList.add("hidden");
+        }
+
+        async function savePet() {
+            const name = document.getElementById("pet-name").value.trim();
+            if (!name) return alert("Name is required!");
+
+            let avatar = null;
+            const fileInput = document.getElementById("pet-avatar");
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                if (file.size > 2 * 1024 * 1024) return alert("Image too large! Max ~2MB.");
+                try {
+                    avatar = await fileToBase64(file);
+                } catch (err) {
+                    alert("Failed to process image.");
+                    return;
+                }
+            }
+
+            if (editingPetId) {
+                const pet = pets.find(p => p.id === editingPetId);
+                pet.name = name;
+                pet.type = document.getElementById("pet-type").value.trim() || pet.type;
+                const goalStr = document.getElementById("pet-goal").value.trim();
+                pet.goalWeight = goalStr ? Number(parseFloat(goalStr).toFixed(1)) : pet.goalWeight;
+                if (avatar) pet.avatar = avatar;
+            } else {
+                const newPet = {
+                    id: "pet-" + Date.now(),
+                    name,
+                    type: document.getElementById("pet-type").value.trim() || "Unknown",
+                    avatar,
+                    goalWeight: document.getElementById("pet-goal").value ? Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null,
+                    logs: [],
+                    prevRibbons: [],
+                    monthlyPhotos: []
+                };
+                pets.push(newPet);
+                selectPet(newPet.id);
+            }
+
+            saveData();
+            renderPetTabs();
+            renderCurrentPet();
+            hidePetModal();
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+            });
+        }
+
+        function openMonthlyPhotoPrompt() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return alert("Select a fighter first!");
+
+            document.getElementById("monthly-caption").value = "";
+            document.getElementById("monthly-photo-modal").classList.remove("hidden");
+        }
+
+        function hideMonthlyModal() {
+            document.getElementById("monthly-photo-modal").classList.add("hidden");
+        }
+
+        async function triggerMonthlyPhotoUpload() {
+            hideMonthlyModal();
+
+            const caption = document.getElementById("monthly-caption").value.trim() || "Monthly progress! 📸";
+
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.onchange = async e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) return alert("Photo too large! Max ~2MB.");
+                try {
+                    const base64 = await fileToBase64(file);
+                    const pet = pets.find(p => p.id === currentPetId);
+                    if (!pet.monthlyPhotos) pet.monthlyPhotos = [];
+                    pet.monthlyPhotos.push({ base64, caption, date: new Date().toISOString().split('T')[0] });
+                    saveData();
+                    renderMonthlyGallery(pet);
+                    alert("Monthly progress photo added! 📸✨");
+                } catch (err) {
+                    alert("Failed to add photo.");
+                }
+            };
+            input.click();
+        }
+
+        function renderMonthlyGallery(pet) {
+            const gallery = document.getElementById("gallery");
+            gallery.innerHTML = "";
+            if (!pet.monthlyPhotos?.length) {
+                gallery.innerHTML = '<p class="text-center text-pink-400 col-span-full py-8">No monthly photos yet — add one to see your fighter grow! 🐾</p>';
+                return;
+            }
+            pet.monthlyPhotos.forEach(photoObj => {
+                const container = document.createElement("div");
+                container.className = "flex flex-col items-center gap-2";
+
+                const img = document.createElement("img");
+                img.src = photoObj.base64;
+                img.alt = photoObj.caption || "Monthly photo";
+                img.className = "gallery-thumb";
+                img.onclick = () => openLightbox(photoObj.base64, photoObj.caption);
+
+                const cap = document.createElement("p");
+                cap.className = "text-xs text-pink-600 text-center max-w-[80px] truncate";
+                cap.textContent = photoObj.caption || "No caption";
+
+                container.appendChild(img);
+                container.appendChild(cap);
+                gallery.appendChild(container);
+            });
+        }
+
+        function openLightbox(src, caption = "") {
+            document.getElementById("lightbox-img").src = src;
+            document.getElementById("lightbox-caption").textContent = caption;
+            document.getElementById("lightbox").classList.remove("hidden");
+        }
+
+        function closeLightbox() {
+            document.getElementById("lightbox").classList.add("hidden");
+        }
+
+        // ... (keep all other functions: renderPetTabs, selectPet, renderCurrentPet, updateCurrentWeightDisplay, getGoalDisplay, getRibbons, celebrateNewRibbons, renderWeightChart, renderHistoryTable, addWeightLog, deleteCurrentPet, exportData, importData, toggleSettings, init)
+
+        function init() {
+            loadData();
+            renderPetTabs();
+            if (pets.length) selectPet(pets[0].id);
+        }
+
+        window.onload = init;
+    </script>
 </body>
 </html>
