@@ -17,7 +17,6 @@
     </style>
 </head>
 <body class="min-h-screen text-pink-900">
-
     <!-- Add/Edit Pet Modal -->
     <div id="pet-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
         <div class="bg-white rounded-3xl p-8 w-full max-w-lg border-8 border-pink-300 shadow-2xl">
@@ -45,7 +44,7 @@
             <button onclick="openAddPetModal()" class="bg-pink-500 text-white px-5 py-2 rounded-3xl text-sm font-bold">+ Add Cat</button>
         </div>
 
-        <!-- Pet tabs (horizontal scroll) -->
+        <!-- Pet tabs -->
         <div class="bg-white border-b border-pink-100 p-3 overflow-x-auto flex gap-3" id="pet-tabs"></div>
 
         <!-- Main content -->
@@ -56,10 +55,10 @@
             </div>
 
             <div id="pet-content" class="hidden space-y-8">
-                <!-- Weight input for this cat -->
+                <!-- Weight input -->
                 <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-bold">This Week's Weigh-in</h3>
+                        <h3 class="text-2xl font-bold">Log Today's Weigh-in</h3>
                         <button onclick="openEditPetModal()" class="bg-pink-300 hover:bg-pink-400 text-white px-5 py-2 rounded-2xl text-sm font-bold">Edit Profile ✏️</button>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -72,19 +71,31 @@
                             </select>
                         </div>
                     </div>
-                    <button onclick="addWeightLog()" class="mt-6 w-full bg-pink-500 text-white py-4 rounded-3xl font-bold">SAVE WEIGHT 💖</button>
+                    <button onclick="addWeightLog()" class="mt-6 w-full bg-pink-500 text-white py-4 rounded-3xl font-bold text-lg">SAVE WEIGHT 💖</button>
                 </div>
 
-                <!-- Graph for this cat -->
+                <!-- Chart -->
                 <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
-                    <h3 class="text-2xl font-bold mb-4">Weight Journey</h3>
+                    <h3 class="text-2xl font-bold mb-4">Weight Journey 📈</h3>
                     <div class="h-64"><canvas id="weight-chart"></canvas></div>
                 </div>
 
-                <!-- History for this cat -->
+                <!-- History -->
                 <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
-                    <h3 class="text-2xl font-bold mb-4">History</h3>
-                    <table class="w-full" id="history-table"></table>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold">History</h3>
+                        <div class="flex gap-3">
+                            <button onclick="exportHistory()" 
+                                    class="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-2xl text-sm font-medium">
+                                📤 Export CSV
+                            </button>
+                            <button onclick="clearAllHistory()" 
+                                    class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-2xl text-sm font-medium">
+                                🗑️ Clear All
+                            </button>
+                        </div>
+                    </div>
+                    <table class="w-full text-left" id="history-table"></table>
                 </div>
             </div>
         </div>
@@ -96,12 +107,17 @@
         let weightChart = null;
         const CONVERSION_FACTOR = 2.20462;
 
-        function saveData() { localStorage.setItem("catFatFighters", JSON.stringify(pets)); }
+        // ==================== DATA PERSISTENCE ====================
+        function saveData() {
+            localStorage.setItem("catFatFighters", JSON.stringify(pets));
+        }
+
         function loadData() {
             const saved = localStorage.getItem("catFatFighters");
             pets = saved ? JSON.parse(saved) : [];
         }
 
+        // ==================== PET FUNCTIONS ====================
         function openAddPetModal() {
             document.getElementById("pet-modal").classList.remove("hidden");
         }
@@ -125,7 +141,8 @@
                 name,
                 type: document.getElementById("pet-type").value.trim() || "Unknown",
                 avatar,
-                goalWeight: document.getElementById("pet-goal").value ? Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null,
+                goalWeight: document.getElementById("pet-goal").value ? 
+                           Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null,
                 logs: []
             };
 
@@ -150,10 +167,10 @@
             pets.forEach(pet => {
                 const isSelected = pet.id === currentPetId;
                 const div = document.createElement("div");
-                div.className = `pet-tab inline-flex flex-col items-center px-4 py-2 rounded-2xl cursor-pointer ${isSelected ? 'bg-pink-100' : ''}`;
+                div.className = `pet-tab inline-flex flex-col items-center px-4 py-2 rounded-2xl cursor-pointer ${isSelected ? 'bg-pink-100 border border-pink-300' : ''}`;
                 div.innerHTML = `
                     <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-pink-300 mb-1">
-                        ${pet.avatar ? `<img src="${pet.avatar}" class="avatar-img">` : `<div class="avatar-fallback">🐱</div>`}
+                        ${pet.avatar ? `<img src="${pet.avatar}" class="avatar-img">` : `<div class="w-full h-full flex items-center justify-center bg-pink-100 text-2xl">🐱</div>`}
                     </div>
                     <div class="text-xs font-medium">${pet.name}</div>
                 `;
@@ -174,81 +191,182 @@
 
             document.getElementById("no-pet-selected").classList.add("hidden");
             document.getElementById("pet-content").classList.remove("hidden");
-
             document.getElementById("log-date").value = new Date().toISOString().split('T')[0];
 
             renderHistoryTable(pet);
             renderWeightChart(pet);
         }
 
+        // ==================== WEIGHT LOGGING ====================
         window.addWeightLog = function() {
             const pet = pets.find(p => p.id === currentPetId);
-            if (!pet) return alert("Select a cat first!");
+            if (!pet) return alert("Please select a cat first!");
 
             const date = document.getElementById("log-date").value;
             let weight = parseFloat(document.getElementById("log-weight").value);
             const unit = document.getElementById("log-unit").value;
 
-            if (!date || isNaN(weight) || weight <= 0) return alert("Please enter a valid date and weight!");
+            if (!date || isNaN(weight) || weight <= 0) {
+                return alert("Please enter a valid date and weight!");
+            }
 
             if (unit === "lbs") weight /= CONVERSION_FACTOR;
 
-            pet.logs.push({ date, weight_kg: parseFloat(weight.toFixed(2)) });
-            saveData();
+            pet.logs.push({
+                date: date,
+                weight_kg: parseFloat(weight.toFixed(2)),
+                timestamp: new Date().toISOString()
+            });
 
-            alert("Weight saved for " + pet.name + " ✅");
+            saveData();
+            confettiBurst(); // celebrate!
             document.getElementById("log-weight").value = "";
 
             renderHistoryTable(pet);
             renderWeightChart(pet);
         };
 
+        function confettiBurst() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        // ==================== HISTORY RENDERING ====================
+        function renderHistoryTable(pet) {
+            const table = document.getElementById("history-table");
+            table.innerHTML = `
+                <thead>
+                    <tr class="border-b border-pink-200">
+                        <th class="p-4 text-left font-medium">Date</th>
+                        <th class="p-4 text-left font-medium">Weight</th>
+                        <th class="p-4 text-left font-medium">lbs</th>
+                        <th class="p-4 w-12"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+            const tbody = table.querySelector("tbody");
+
+            if (!pet.logs || pet.logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-12 text-pink-400">No weigh-ins recorded yet 💕</td></tr>`;
+                return;
+            }
+
+            // Sort newest first
+            const sortedLogs = [...pet.logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedLogs.forEach((log, index) => {
+                const lbs = (log.weight_kg * CONVERSION_FACTOR).toFixed(1);
+                const row = document.createElement("tr");
+                row.className = "border-b border-pink-100 hover:bg-pink-50";
+                row.innerHTML = `
+                    <td class="p-4">${new Date(log.date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})}</td>
+                    <td class="p-4 font-semibold">${log.weight_kg.toFixed(2)} kg</td>
+                    <td class="p-4 text-pink-500">${lbs} lbs</td>
+                    <td class="p-4">
+                        <button onclick="deleteLog('${pet.id}', ${index})" 
+                                class="text-red-500 hover:text-red-700 text-xl">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Delete single log
+        window.deleteLog = function(petId, logIndex) {
+            if (!confirm("Delete this weight entry?")) return;
+
+            const pet = pets.find(p => p.id === petId);
+            if (pet && pet.logs[logIndex]) {
+                pet.logs.splice(logIndex, 1);
+                saveData();
+                renderHistoryTable(pet);
+                renderWeightChart(pet);
+            }
+        };
+
+        // Clear all history for current pet
+        window.clearAllHistory = function() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return;
+
+            if (confirm(`Clear ALL weight history for ${pet.name}? This cannot be undone.`)) {
+                pet.logs = [];
+                saveData();
+                renderHistoryTable(pet);
+                renderWeightChart(pet);
+            }
+        };
+
+        // Export history as CSV
+        window.exportHistory = function() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet || !pet.logs.length) {
+                return alert("No history to export yet!");
+            }
+
+            let csv = "Date,Weight (kg),Weight (lbs)\n";
+            pet.logs.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(log => {
+                const lbs = (log.weight_kg * CONVERSION_FACTOR).toFixed(2);
+                csv += `${log.date},${log.weight_kg},${lbs}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${pet.name}_weight_history.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        // Chart function (unchanged except small improvements)
         function renderWeightChart(pet) {
             if (weightChart) weightChart.destroy();
+
             const canvas = document.getElementById("weight-chart");
             const sorted = [...pet.logs].sort((a,b) => new Date(a.date) - new Date(b.date));
+
             const labels = sorted.map(l => new Date(l.date).toLocaleDateString('en-GB', {day:'numeric', month:'short'}));
             const weights = sorted.map(l => l.weight_kg);
 
             weightChart = new Chart(canvas, {
                 type: 'line',
                 data: {
-                    labels: labels.length ? labels : ["No data"],
+                    labels: labels.length ? labels : ["No data yet"],
                     datasets: [{
                         label: 'Weight (kg)',
                         data: weights.length ? weights : [0],
                         borderColor: '#ec4899',
+                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
                         tension: 0.3,
                         pointBackgroundColor: '#fff',
-                        pointBorderWidth: 3
+                        pointBorderWidth: 3,
+                        pointRadius: 5
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: false }
+                    }
+                }
             });
         }
 
-        function renderHistoryTable(pet) {
-            const tbody = document.getElementById("history-table");
-            tbody.innerHTML = "";
-            if (!pet.logs.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-pink-400">No weigh-ins yet</td></tr>';
-                return;
-            }
-            [...pet.logs].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(log => {
-                const lbs = (log.weight_kg * CONVERSION_FACTOR).toFixed(1);
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="p-4">${new Date(log.date).toLocaleDateString('en-GB', {day:'numeric', month:'short'})}</td>
-                        <td class="p-4 font-medium">${log.weight_kg.toFixed(1)} kg</td>
-                        <td class="p-4 text-pink-400">${lbs} lbs</td>
-                    </tr>`;
-            });
-        }
-
+        // Initialize app
         function init() {
             loadData();
             renderPetTabs();
-            if (pets.length) selectPet(pets[0].id);
+            if (pets.length > 0) {
+                selectPet(pets[0].id);
+            }
         }
 
         window.onload = init;
