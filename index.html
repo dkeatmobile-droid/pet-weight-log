@@ -17,18 +17,25 @@
     </style>
 </head>
 <body class="min-h-screen text-pink-900">
-    <!-- Add/Edit Pet Modal -->
+    <!-- Pet Modal (used for both Add and Edit) -->
     <div id="pet-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
         <div class="bg-white rounded-3xl p-8 w-full max-w-lg border-8 border-pink-300 shadow-2xl">
             <h3 id="modal-title" class="text-4xl font-bold text-pink-600 mb-8 text-center">Add a Cat! 🐾</h3>
+            
             <div class="space-y-6">
                 <input id="pet-name" type="text" placeholder="Name (required)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl">
                 <input id="pet-type" type="text" placeholder="Breed (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl">
                 <input id="pet-goal" type="number" step="0.1" placeholder="Goal weight kg (optional)" class="w-full border-2 border-pink-300 rounded-2xl px-6 py-5 text-2xl">
                 <input id="pet-avatar" type="file" accept="image/*" class="w-full text-lg">
+                
+                <div id="current-avatar" class="hidden flex justify-center">
+                    <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-pink-300"></div>
+                </div>
+
                 <div class="flex gap-4">
                     <button onclick="hidePetModal()" class="flex-1 py-5 text-pink-500 font-bold border-2 border-pink-300 rounded-2xl">Cancel</button>
-                    <button onclick="savePet()" class="flex-1 py-5 bg-pink-500 text-white font-bold rounded-2xl">Add Cat! 💖</button>
+                    <button onclick="savePet()" id="save-pet-btn" 
+                            class="flex-1 py-5 bg-pink-500 text-white font-bold rounded-2xl">Add Cat! 💖</button>
                 </div>
             </div>
         </div>
@@ -59,7 +66,10 @@
                 <div class="bg-white rounded-3xl p-6 shadow border border-pink-200">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-2xl font-bold">Log Today's Weigh-in</h3>
-                        <button onclick="openEditPetModal()" class="bg-pink-300 hover:bg-pink-400 text-white px-5 py-2 rounded-2xl text-sm font-bold">Edit Profile ✏️</button>
+                        <button onclick="openEditPetModal()" 
+                                class="bg-pink-300 hover:bg-pink-400 text-white px-5 py-2 rounded-2xl text-sm font-bold flex items-center gap-2">
+                            ✏️ Edit Profile
+                        </button>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <input id="log-date" type="date" class="border-2 border-pink-200 rounded-2xl p-4">
@@ -105,6 +115,7 @@
         let pets = [];
         let currentPetId = null;
         let weightChart = null;
+        let editingPetId = null;   // ← Important: tracks if we're editing
         const CONVERSION_FACTOR = 2.20462;
 
         // ==================== DATA PERSISTENCE ====================
@@ -117,13 +128,55 @@
             pets = saved ? JSON.parse(saved) : [];
         }
 
-        // ==================== PET FUNCTIONS ====================
+        // ==================== PET MODAL ====================
         function openAddPetModal() {
+            editingPetId = null;
+            document.getElementById("modal-title").textContent = "Add a Cat! 🐾";
+            document.getElementById("save-pet-btn").textContent = "Add Cat! 💖";
+            document.getElementById("current-avatar").classList.add("hidden");
+            
+            // Clear fields
+            document.getElementById("pet-name").value = "";
+            document.getElementById("pet-type").value = "";
+            document.getElementById("pet-goal").value = "";
+            document.getElementById("pet-avatar").value = "";
+
+            document.getElementById("pet-modal").classList.remove("hidden");
+        }
+
+        function openEditPetModal() {
+            const pet = pets.find(p => p.id === currentPetId);
+            if (!pet) return;
+
+            editingPetId = pet.id;
+            document.getElementById("modal-title").textContent = `Edit ${pet.name}`;
+            document.getElementById("save-pet-btn").textContent = "Save Changes 💖";
+
+            // Pre-fill fields
+            document.getElementById("pet-name").value = pet.name || "";
+            document.getElementById("pet-type").value = pet.type || "";
+            document.getElementById("pet-goal").value = pet.goalWeight || "";
+
+            // Show current avatar if exists
+            const avatarContainer = document.getElementById("current-avatar");
+            if (pet.avatar) {
+                avatarContainer.innerHTML = `
+                    <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-pink-300">
+                        <img src="${pet.avatar}" class="avatar-img">
+                    </div>
+                `;
+                avatarContainer.classList.remove("hidden");
+            } else {
+                avatarContainer.classList.add("hidden");
+            }
+
+            document.getElementById("pet-avatar").value = ""; // reset file input
             document.getElementById("pet-modal").classList.remove("hidden");
         }
 
         function hidePetModal() {
             document.getElementById("pet-modal").classList.add("hidden");
+            editingPetId = null;
         }
 
         async function savePet() {
@@ -136,21 +189,40 @@
                 avatar = await fileToBase64(fileInput.files[0]);
             }
 
-            const newPet = {
-                id: "pet-" + Date.now(),
-                name,
-                type: document.getElementById("pet-type").value.trim() || "Unknown",
-                avatar,
-                goalWeight: document.getElementById("pet-goal").value ? 
-                           Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null,
-                logs: []
-            };
+            if (editingPetId) {
+                // === UPDATE EXISTING PET ===
+                const pet = pets.find(p => p.id === editingPetId);
+                if (pet) {
+                    pet.name = name;
+                    pet.type = document.getElementById("pet-type").value.trim() || "Unknown";
+                    pet.goalWeight = document.getElementById("pet-goal").value ? 
+                                    Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null;
+                    if (avatar) pet.avatar = avatar;   // only update if new image selected
+                }
+            } else {
+                // === CREATE NEW PET ===
+                const newPet = {
+                    id: "pet-" + Date.now(),
+                    name,
+                    type: document.getElementById("pet-type").value.trim() || "Unknown",
+                    avatar: avatar,
+                    goalWeight: document.getElementById("pet-goal").value ? 
+                               Number(parseFloat(document.getElementById("pet-goal").value).toFixed(1)) : null,
+                    logs: []
+                };
+                pets.push(newPet);
+            }
 
-            pets.push(newPet);
             saveData();
             renderPetTabs();
             hidePetModal();
-            selectPet(newPet.id);
+
+            // Refresh current view if editing
+            if (editingPetId && currentPetId === editingPetId) {
+                renderCurrentPet();
+            } else if (!editingPetId && pets.length === 1) {
+                selectPet(pets[0].id);
+            }
         }
 
         function fileToBase64(file) {
@@ -161,6 +233,7 @@
             });
         }
 
+        // ==================== OTHER FUNCTIONS (unchanged from previous) ====================
         function renderPetTabs() {
             const container = document.getElementById("pet-tabs");
             container.innerHTML = "";
@@ -197,7 +270,6 @@
             renderWeightChart(pet);
         }
 
-        // ==================== WEIGHT LOGGING ====================
         window.addWeightLog = function() {
             const pet = pets.find(p => p.id === currentPetId);
             if (!pet) return alert("Please select a cat first!");
@@ -219,7 +291,7 @@
             });
 
             saveData();
-            confettiBurst(); // celebrate!
+            confettiBurst();
             document.getElementById("log-weight").value = "";
 
             renderHistoryTable(pet);
@@ -234,7 +306,6 @@
             });
         }
 
-        // ==================== HISTORY RENDERING ====================
         function renderHistoryTable(pet) {
             const table = document.getElementById("history-table");
             table.innerHTML = `
@@ -250,13 +321,11 @@
             `;
 
             const tbody = table.querySelector("tbody");
-
             if (!pet.logs || pet.logs.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="text-center py-12 text-pink-400">No weigh-ins recorded yet 💕</td></tr>`;
                 return;
             }
 
-            // Sort newest first
             const sortedLogs = [...pet.logs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
             sortedLogs.forEach((log, index) => {
@@ -276,12 +345,10 @@
             });
         }
 
-        // Delete single log
         window.deleteLog = function(petId, logIndex) {
             if (!confirm("Delete this weight entry?")) return;
-
             const pet = pets.find(p => p.id === petId);
-            if (pet && pet.logs[logIndex]) {
+            if (pet) {
                 pet.logs.splice(logIndex, 1);
                 saveData();
                 renderHistoryTable(pet);
@@ -289,12 +356,10 @@
             }
         };
 
-        // Clear all history for current pet
         window.clearAllHistory = function() {
             const pet = pets.find(p => p.id === currentPetId);
             if (!pet) return;
-
-            if (confirm(`Clear ALL weight history for ${pet.name}? This cannot be undone.`)) {
+            if (confirm(`Clear ALL weight history for ${pet.name}?`)) {
                 pet.logs = [];
                 saveData();
                 renderHistoryTable(pet);
@@ -302,12 +367,9 @@
             }
         };
 
-        // Export history as CSV
         window.exportHistory = function() {
             const pet = pets.find(p => p.id === currentPetId);
-            if (!pet || !pet.logs.length) {
-                return alert("No history to export yet!");
-            }
+            if (!pet || !pet.logs.length) return alert("No history to export!");
 
             let csv = "Date,Weight (kg),Weight (lbs)\n";
             pet.logs.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(log => {
@@ -319,12 +381,11 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${pet.name}_weight_history.csv`;
+            a.download = `${pet.name.replace(/[^a-z0-9]/gi, '_')}_weight_history.csv`;
             a.click();
             URL.revokeObjectURL(url);
         };
 
-        // Chart function (unchanged except small improvements)
         function renderWeightChart(pet) {
             if (weightChart) weightChart.destroy();
 
@@ -353,14 +414,11 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: false }
-                    }
+                    scales: { y: { beginAtZero: false } }
                 }
             });
         }
 
-        // Initialize app
         function init() {
             loadData();
             renderPetTabs();
